@@ -29,6 +29,22 @@ from statistics import median
 
 
 class CM:
+    """
+    each row of self.data contains following information:
+    FrameCount(0) msTimeStamp(1) RoomX(2) RoomY(3) Sectors(4) State(5) CurrentLevel(6)...
+        ...ArenaX(7) ArenaY(8) Sectors(9) State(10) CurrentLevel(11)
+        - indexes are in parentheses
+        - first two items are relevant to both arena and room frame
+            following 5 items are related to room frame and final 5 items are related
+            to arena frame
+        - state info: OutsideSector = 0, EntranceLatency = 1, Shock = 2,
+                      InterShockLatency = 3, OutsideRefractory = 4, BadSpot = 5
+        - RoomX/Y, ArenaX/Y are coordinates in respective frames (in pixels)
+        - sectors: 0 - no, 1 - room, 2 - arena, 3 - both
+        - current level is in miliamperes
+        - time stamp is in miliseconds
+    """
+    
     def __init__(self, nameA, nameR = "auto", cache = {}, order = deque()):
         "class CM represents data from carousel maze"
 
@@ -37,8 +53,40 @@ class CM:
         self.interpolated = set()
 
         # automatic room frame filename creation
-        if nameR == "auto":
-            splitname = os.path.split(nameA)
+        self._setRoomName(nameR)
+        
+        # in cache?
+        if (self.nameA, self.nameR) in cache:
+            self.__dict__ = cache[(self.nameA, self.nameR)]
+            return
+     
+        # processing data from room frame    
+        with open(self.nameR, "r") as infile:
+            self._processHeader(infile)
+            self._processRoomFile(infile)
+
+        # processing data from arena frame
+        with open(self.nameA, "r") as infile:
+            self._processArenaFile(infile)
+
+        # discards missing points from beginning of self.data
+        self._correctMissingFromBeginning()
+          
+        # exception used for example when all lines are wrong (all positions are 0, 0)
+        if not self.data:
+            raise Exception("Failure in data initialization.")
+
+        # caching
+        cache[(self.nameA, self.nameR)] = self.__dict__
+        order.append((self.nameA, self.nameR))
+        if len(order) > 10:
+            del cache[order.popleft()]
+
+
+        
+    def _setRoomName(self, name):
+        if name == "auto":
+            splitname = os.path.split(self.nameA)
             if splitname[1].count("Arena") > 0:
                 self.nameR = os.path.join(splitname[0], splitname[1].replace("Arena", "Room"))
             elif splitname[1].count("arena") > 0:
@@ -46,18 +94,10 @@ class CM:
             else:
                 raise IOError
         else:
-            self.nameR = nameR
+            self.nameR = name
 
-        # in cache?
-        if (self.nameA, self.nameR) in cache:
-            self.__dict__ = cache[(self.nameA, self.nameR)]
-            return
-     
-        # processing data from room frame    
-        infile = open(self.nameR, "r")
-
-        # processing header
-        for line in infile:
+    def _processHeader(self, file):
+        for line in file:
             if line.count("TrackerVersion") > 0:
                 if "iTrack" in line:
                     self.tracker = "iTrack"
@@ -84,10 +124,7 @@ class CM:
                 for i in range(len(strg)):
                     if strg[i] == "(":
                         pos = i
-                self.centerAngle = eval(strg[pos+1])   
-                self.width = eval(strg[pos+2])         
-                self.innerRadius = eval(strg[pos+3])
-                self.outerRadius = eval(strg[pos+4])
+                self._addReinforcedSector(strg, pos)
             elif line.count("ArenaDiameter") > 0:
                 strg = line.split()
                 for i in range(len(strg)):
@@ -99,12 +136,21 @@ class CM:
             
         self.radius = max([self.centerX, self.centerY]) 
 
+
+    def _addReinforcedSector(self, string, position):
+        self.centerAngle = eval(string[position+1])   
+        self.width = eval(string[position+2])         
+        self.innerRadius = eval(string[position+3])
+        self.outerRadius = eval(string[position+4])
+
+
+    def _processRoomFile(self, infile, endsplit = 7):
         missing = []
 
         count = -1
         for line in infile:
             try:
-                line = list(map(int, line.split()[:7]))
+                line = list(map(int, line.split()[:endsplit]))
                 self.data.append(line)
             except Exception:
                 continue
@@ -159,12 +205,7 @@ class CM:
             for missLines in missing:
                 self.data[missLines][2:4] = before
 
-        infile.close()
-
-    
-        # processing data from arena frame
-        infile = open(nameA, "r")
-      
+    def _processArenaFile(self, infile):
         for line in infile:
             if line.count("END_HEADER") > 0:
                 break
@@ -228,7 +269,9 @@ class CM:
         if missing != []:
             for missLines in missing:
                 self.data[missLines][7:9] = before
-      
+
+
+    def _correctMissingFromBeginning(self):
         beginMiss = 0
         
         for line in self.data:
@@ -241,33 +284,8 @@ class CM:
                         self.data[i][0] -= beginMiss
                 break
 
-        infile.close()
-        
-        # exception used for example when all lines are wrong (all positions are 0, 0)
-        if not self.data:
-            raise Exception("Failure in data initialization.")
 
-        # caching
-        cache[(self.nameA, self.nameR)] = self.__dict__
-        order.append((self.nameA, self.nameR))
-        if len(order) > 10:
-            del cache[order.popleft()]
 
-        """self.data - each row of a data file is represented by a list within the returned list
-            each row contains following information:
-            FrameCount(0) msTimeStamp(1) RoomX(2) RoomY(3) Sectors(4) State(5) CurrentLevel(6)...
-                ...ArenaX(7) ArenaY(8) Sectors(9) State(10) CurrentLevel(11)
-                - indexes are in parentheses
-                - first two items are relevant to both arena and room frame
-                    following 5 items are related to room frame and final 5 items are related
-                    to arena frame
-                - state info: OutsideSector = 0, EntranceLatency = 1, Shock = 2,
-                              InterShockLatency = 3, OutsideRefractory = 4, BadSpot = 5
-                - RoomX/Y, ArenaX/Y are coordinates in respective frames (in pixels)
-                - sectors: 0 - no, 1 - room, 2 - arena, 3 - both
-                - current level is in miliamperes
-                - time stamp is in miliseconds
-        """
 
     @property
     def centerAngle(self):
@@ -282,7 +300,8 @@ class CM:
         self._centerAngle = value
 
 
-    def getDistance(self, skip = 25, time = 20, startTime = 0, minDifference = 0):
+    def getDistance(self, skip = 25, time = 20, startTime = 0, minDifference = 0,
+                    indices = slice(7,9)):
         """computes total distance travelled (in metres),
         argument 'skip' controls how many rows are skipped in distance computation,
         argument 'time' is time of the session,
@@ -290,10 +309,10 @@ class CM:
         dist = 0
         time = time * 60000 # conversion from minutes to miliseconds
         start = self.findStart(startTime)
-        x0, y0 = self.data[start][7:9] 
+        x0, y0 = self.data[start][indices] 
         for content in self.data[(start + skip)::skip]:
             if content[1] <= time:
-                x1, y1 = content[7:9]
+                x1, y1 = content[indices]
                 diff = ((x1 - x0)**2 + (y1 - y0)**2)**0.5
                 if diff > minDifference:
                     dist += diff
@@ -956,22 +975,7 @@ class CM:
             return self._findStartHelper(0, len(self.data), startTime)
 
 
-        # self.data description
-        """
-        each row contains following information:
-        FrameCount(0) msTimeStamp(1) RoomX(2) RoomY(3) Sectors(4) State(5) CurrentLevel(6)...
-            ...ArenaX(7) ArenaY(8) Sectors(9) State(10) CurrentLevel(11)
-            - indexes are in parentheses
-            - first two items are relevant to both arena and room frame
-                following 5 items are related to room frame and final 5 items are related
-                to arena frame
-            - state info: OutsideSector = 0, EntranceLatency = 1, Shock = 2,
-                          InterShockLatency = 3, OutsideRefractory = 4, BadSpot = 5
-            - RoomX/Y, ArenaX/Y are coordinates in respective frames (in pixels)
-            - sectors: 0 - no, 1 - room, 2 - arena, 3 - both
-            - current level is in miliamperes
-            - time stamp is in miliseconds
-        """
+
 
 
 

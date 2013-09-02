@@ -232,7 +232,7 @@ class OptionsCM(Toplevel):
         "opens dialog for choosing color of comments and immediately saves the selected color"
         color = colorchooser.askcolor(initialcolor = optionGet("CommentColor", "grey90", 'str'),
                                       parent = self)
-        if color and len(color) > 1:
+        if color and len(color) > 1 and color[1]:
             selected = color[1]
             optionWrite("CommentColor", "'" +  selected + "'")
             self.root.explorer.fileFrame.tree.tag_configure("comment", background = selected)

@@ -31,6 +31,7 @@ from optionget import optionGet
 from window import placeWindow
 from cm import CM
 from comment import Comment, commentColor
+import mode as m
 
 
 class FileStorage(object):
@@ -756,6 +757,8 @@ def recognizeFiles(filenames):
     matching files are those for which other file with the same name except from 'room' 'Arena'
     etc. exists in the same directory"""
     filenames.sort()
+    if m.files == "one":
+        return [], [os.path.normpath(file) for file in filenames]
     filenames = deque(os.path.normpath(file) for file in filenames)
     arenaFiles = []
     nonmatchingFiles = []

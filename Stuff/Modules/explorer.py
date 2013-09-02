@@ -26,7 +26,7 @@ import os
 import os.path
 
 
-from cm import CM, Parameters
+from cm import Parameters
 from filestorage import FileStorageFrame
 from commonframes import TimeFrame, returnName
 from image import SVG
@@ -34,6 +34,7 @@ from processor import ProgressWindow
 from optionget import optionGet
 from graphs import getGraphTypes, Graphs, SvgGraph, SpeedGraph, DistanceFromCenterGraph, AngleGraph
 from comment import Comment, commentColor
+import mode as m
 
 
 class Explorer(ttk.Frame):
@@ -287,9 +288,9 @@ class Explorer(ttk.Frame):
         for filename in files:
             try:
                 if filename in self.fileStorage.pairedfiles:
-                    cm = CM(filename, nameR = self.fileStorage.pairedfiles[filename])
+                    cm = m.CL(filename, self.fileStorage.pairedfiles[filename])
                 else:
-                    cm = CM(filename, nameR = "auto")
+                    cm = m.CL(filename, "auto")
                 if self.removeReflectionsVar.get():
                     cm.removeReflections(points = self.fileStorage.reflections.get(filename, None))
                 self.saveOneImage(cm, filename)               
@@ -469,19 +470,53 @@ class Explorer(ttk.Frame):
             value = value
         else:
             value = ((float(value) * (self.maxTime - self.minTime)) / 100) + self.minTime
-        
-        # finds current line in data and computes current distance and entrances            
-        x0, y0 = self.cm.data[0][7:9] 
+                  
+        curLine = self._updateDefaultParameters(value)
+        self._updateSelectedParameter(value)
+
+        if self.showTailVar.get():
+            self._createTail(curLine)                      
+
+        if m.mode == "CM":
+            Ax, Ay = curLine[7:9]
+            Rx, Ry = curLine[2:4]
+            self.roomCanv.coords("ratR", (Rx + self.ld, Ry + self.ld,\
+                                    Rx + self.ur, Ry + self.ur))
+            self.roomCanv.lift("ratR")
+        else:
+            Ax, Ay = curLine[2:4]
+        self.arenaCanv.coords("ratA", (Ax + self.ld, Ay + self.ld,\
+                                Ax + self.ur, Ay + self.ur))   
+        self.arenaCanv.lift("ratA")
+
+        self._setShockColor(curLine)
+
+        self.graph.changedTime(value)
+
+        # changes position of a time scale               
+        if value < self.maxTime:
+            self.curTime.set(((value - self.minTime) * 100) / (self.maxTime - self.minTime))
+            self.timeVar.set(self._timeFormat(value))  
+        else:
+            self.curTime.set(100)
+            self.timeVar.set(self._timeFormat(self.maxTime))          
+
+        self.update()
+
+
+    def _updateDefaultParameters(self, time):
+        indices = slice(7, 9) if m.mode == "CM" else slice(2, 4)
+        x0, y0 = self.cm.data[0][indices] 
         dist = 0
         entrances = 0
         prev = 0
         skip = 25 # z options
         start = self.cm.findStart(self.minTime / 60000)
         for row, content in enumerate(self.cm.data[start:]):
-            if content[1] < value:
+            if content[1] < time:
                 # distance
                 if row % skip == 0:
-                    x1, y1 = content[7:9]
+                    x1, y1 = content[indices]
                     diff = ((x1 - x0)**2 + (y1 - y0)**2)**0.5
                     dist += diff
                     x0, y0 = x1, y1
@@ -504,70 +539,56 @@ class Explorer(ttk.Frame):
         dist = dist / (self.cm.trackerResolution * 100) # conversion from pixels to metres
         self.distanceVar.set("{:.1f}".format(dist))
         self.entrancesVar.set(entrances)
+        return curLine
 
-        # selected parameter
+
+    def _updateSelectedParameter(self, time):
         if self.selectedParameter.get():
-            time = value / 60000
+            time /= 60000
             startTime = self.minTime / 60000
             try:
                 self.selectedPVar.set(eval("self." + self.selectedParameter.get()))
             except Exception:
                 self.selectedPVar.set("-")
 
-        # tail
-        if self.showTailVar.get():
-            self.arenaCanv.delete("trailA")
-            self.roomCanv.delete("trailR")
-            if curLine[0] >= 10:
-                end = curLine[0]
-                d = self.cm.radius
-                start = end - 500 if end > 500 else 0
-                start = round(start*2, -1) // 2
+
+    def _createTail(self, curLine):
+        self.arenaCanv.delete("trailA")
+        self.roomCanv.delete("trailR")
+        if curLine[0] >= 10:
+            end = curLine[0]
+            r = self.cm.radius
+            start = end - 500 if end > 500 else 0
+            start = round(start*2, -1) // 2
+            if m.mode == "CM":
                 trail = [tuple(content[2:4] + content[7:9]) for content in
                          self.cm.data[start:end:5]]
                 arena = []
                 room = []
                 for rx, ry, ax, ay in trail:
-                    arena.append((ax + 150 - d, ay + 150 - d))
-                    room.append((rx + 150 - d, ry + 150 - d))
-                arena.append((curLine[7] + 150 - d, curLine[8] + 150 - d))
-                room.append((curLine[2] + 150 - d, curLine[3] + 150 - d))
+                    arena.append((ax + 150 - r, ay + 150 - r))
+                    room.append((rx + 150 - r, ry + 150 - r))
+                arena.append((curLine[7] + 150 - r, curLine[8] + 150 - r))
+                room.append((curLine[2] + 150 - r, curLine[3] + 150 - r))
                 self.arenaCanv.create_line((arena), fill = "blue", width = 2, tag = "trailA")
-                self.roomCanv.create_line((room), fill = "blue", width = 2, tag = "trailR")                          
+                self.roomCanv.create_line((room), fill = "blue", width = 2, tag = "trailR")
+            else:
+                trail = [tuple(content[2:4]) for content in self.cm.data[start:end:5]]
+                arena = []
+                for ax, ay in trail:
+                    arena.append((ax + 150 - r, ay + 150 - r))
+                arena.append((curLine[2] + 150 - r, curLine[3] + 150 - r))
+                self.arenaCanv.create_line((arena), fill = "blue", width = 2, tag = "trailA")
 
-        # changes position of 'the rat'
-        Rx, Ry = curLine[2:4]
-        Ax, Ay = curLine[7:9]
-        
-        self.arenaCanv.coords("ratA", (Ax + self.ld, Ay + self.ld,\
-                                Ax + self.ur, Ay + self.ur))
-        self.roomCanv.coords("ratR", (Rx + self.ld, Ry + self.ld,\
-                                Rx + self.ur, Ry + self.ur))
-        
-        self.arenaCanv.lift("ratA")
-        self.roomCanv.lift("ratR")
 
-        # changes color of 'the rat' in case of shock
-        if curLine[6] > 0:
+    def _setShockColor(self, curLine):
+        if (m.mode == "CM" and curLine[6] > 0) or (m.mode == "MWM" and curLine[-1] > 0):
             self.roomCanv.itemconfigure("ratR", fill = "red", outline = "red")
             self.shock = True
-        elif self.shock and curLine[6] <= 0:
-            self.roomCanv.itemconfigure("ratR", fill = "black", outline = "black")
-            self.shock = False       
-
-
-        self.graph.changedTime(value)
-
-        # changes position of a time scale               
-        if value < self.maxTime:
-            self.curTime.set(((value - self.minTime) * 100) / (self.maxTime - self.minTime))
-            self.timeVar.set(self._timeFormat(value))  
         else:
-            self.curTime.set(100)
-            self.timeVar.set(self._timeFormat(self.maxTime))          
-
-        self.update()
-
+            self.roomCanv.itemconfigure("ratR", fill = "black", outline = "black")
+            self.shock = False
+            
             
     def setTime(self):
         "called when maximum or minimum time is set"
@@ -611,67 +632,103 @@ class Explorer(ttk.Frame):
     def initializeFile(self, filename, new = True, timeReset = True):
         "initializes canvases, graph, etc."
         if new:
-            try:
-                if filename in self.fileStorage.pairedfiles:
-                    self.cm = CM(filename, nameR = self.fileStorage.pairedfiles[filename])
-                else:
-                    self.cm = CM(filename, nameR = "auto")
-                if self.removeReflectionsVar.get():
-                    self.cm.removeReflections(points = self.fileStorage.reflections.get(filename,
-                                                                                        None))
-            except Exception as e:
-                if optionGet("Developer", False, 'bool'):
-                    print(e)
-                self.status.set("File failed to load!")
-                self.bell()
-                return
+            self._loadData(filename)
 
-  
-        # initialization of canvases
+        r = self.cm.radius
+        self.r = r
+        self.shock = False
+
         self.arenaCanv.delete("all")
         self.roomCanv.delete("all")
-        
-        d = self.cm.radius
-        self.arenaCanv.create_oval(150 - d, 150 - d, 150 + d, 150 + d, outline = "black",\
-                                   width = 2, tags = "arenaAF")
-        self.roomCanv.create_oval(150 - d, 150 - d, 150 + d, 150 + d, outline = "black",\
-                                  width = 2, tags = "arenaRF")
+        if m.mode != "OF":
+            self.arenaCanv.create_oval(150 - r, 150 - r, 150 + r, 150 + r, outline = "black",\
+                                       width = 2, tags = "arenaAF")
+            self.roomCanv.create_oval(150 - r, 150 - r, 150 + r, 150 + r, outline = "black",\
+                                      width = 2, tags = "arenaRF")
+        else:
+            self.arenaCanv.create_rectangle(150 - r, 150 - r, 150 + r, 150 + r,
+                                            outline = "black", width = 2, tags = "arenaAF")
+            self.roomCanv.create_rectangle(150 - r, 150 - r, 150 + r, 150 + r, outline = "black",
+                                           width = 2, tags = "arenaRF")            
 
-       
-        # creates lines depicting the shock sector
         if self.cm.centerAngle:
-            self.angle = self.cm.centerAngle
-            self.width = self.cm.width
+            self._createShockSector()
 
-            a1 = radians(self.angle - (self.width / 2))
-            a2 = radians(self.angle + (self.width / 2))
-
-            Sx1, Sy1 = 150 + (cos(a1) * d), 150 - (sin(a1) * d)
-            Sx2, Sy2 = 150 + (cos(a2) * d), 150 - (sin(a2) * d)
-            
-            self.roomCanv.create_line((Sx1, Sy1, 150, 150, Sx2, Sy2), fill = "red", width = 2,\
-                                       tags = "shockZone")
-
-
-        # minimal and maximal time
         self.maxTime = min([self.cm.data[-1][1], eval(self.timeFrame.timeVar.get()) * 60000])
         self.minTime = max([self.cm.data[0][1], eval(self.timeFrame.startTimeVar.get()) * 60000])
 
-        # initial position
-        for line in self.cm.data:
-            if line[1] < self.minTime:
-                continue                       
-            else:
-                curLine = line
-                break
+        if self.showTrackVar.get() or m.mode != "CM":
+            self._drawTrack()
+            
+        if not self.showTrackVar.get() or m.mode != "CM":
+            self._initializeAnimation()
+
+        self._setParameterDisplays(timeReset)
+
+        self.graph.delete("all")
+        if timeReset:
+            self.graph.CM_loaded(self.cm, minTime = self.minTime, maxTime = self.maxTime)
         else:
-            self.status.set("Invalid start time set.")
+            self.graph.CM_loaded(self.cm, minTime = self.minTime, maxTime = self.maxTime,
+                                 initTime = (self.curTime.get() * (self.maxTime - self.minTime) /
+                                             100 + self.minTime))
+
+        self._changeButtonStatuses()
+
+        self.initialized = True
+        
+        if self.fileStorage.comments[filename]:
+            comment = self.fileStorage.comments[filename].replace("\n", "\t")
+            if len(comment) > 150:
+                comment = comment[:149] + "(...)"
+            self.status.set(comment)
+        
+        if new and timeReset:
+            self.curTime.set(0)
+            self.timeVar.set(self._timeFormat(self.minTime))  
+
+
+    def _loadData(self, filename):
+        try:
+            if filename in self.fileStorage.pairedfiles:
+                self.cm = m.CL(filename, self.fileStorage.pairedfiles[filename])
+            else:
+                self.cm = m.CL(filename, "auto")
+            if self.removeReflectionsVar.get():
+                self.cm.removeReflections(points = self.fileStorage.reflections.get(filename,
+                                                                                    None))
+        except Exception as e:
+            if optionGet("Developer", False, 'bool'):
+                print(e)
+            self.status.set("File failed to load!")
             self.bell()
             return
 
-        
-        if self.showTrackVar.get():
-            # draws tracks        
+
+    def _createShockSector(self):
+        if m.mode == "CM":        
+            self.angle = self.cm.centerAngle
+            self.width = self.cm.width
+            a1 = radians(self.angle - (self.width / 2))
+            a2 = radians(self.angle + (self.width / 2))
+            Sx1, Sy1 = 150 + (cos(a1) * self.r), 150 - (sin(a1) * self.r)
+            Sx2, Sy2 = 150 + (cos(a2) * self.r), 150 - (sin(a2) * self.r)      
+            self.roomCanv.create_line((Sx1, Sy1, 150, 150, Sx2, Sy2), fill = "red", width = 2,\
+                                       tags = "shockZone")        
+        elif m.mode == "MWM":
+            x = self.cm.platformX + 150 - self.r
+            y = self.cm.platformY + 150 - self.r
+            r = self.cm.platformRadius
+            self.arenaCanv.create_oval(x - r, y - r, x + r, y + r, outline = "red",
+                                       width = 2, tags = "platformAF")
+            self.roomCanv.create_oval(x - r, y - r, x + r, y + r, outline = "red",
+                                      width = 2, tags = "platformRF")              
+            
+
+
+    def _drawTrack(self):
+        r = self.r
+        if m.mode == "CM":
             data = [line[2:4] + line[6:9] for count, line in enumerate(self.cm.data) if
                     self.minTime <= line[1] <= self.maxTime]
             arena = []
@@ -687,51 +744,69 @@ class Explorer(ttk.Frame):
                     arena.append(line[3:5])
                     last[1] = count
                 prev = line
-                    
-            self.arenaCanv.create_line(([item + 150 - d for line in arena for item in line]),
+            self.arenaCanv.create_line(([item + 150 - r for line in arena for item in line]),
                                        fill = "black", width = 2)
-            self.roomCanv.create_line(([item + 150 - d for line in room for item in line]),
+            self.roomCanv.create_line(([item + 150 - r for line in room for item in line]),
                                       fill = "black", width = 2)
-            # draws shocks
+
             if self.showShocksVar.get():
                 shocks = [line[2:4] for count, line in enumerate(self.cm.data) if
                           self.minTime <= line[1] <= self.maxTime and line[6] > 0 and
                           self.cm.data[count - 1][6] <= 0]
-                self.ld = 150 - d - 4
-                self.ur = 150 - d + 4
+                self.ld = 150 - r - 4
+                self.ur = 150 - r + 4
                 for shock in shocks:
                     self.roomCanv.create_oval(shock[0] + self.ld, shock[1] + self.ld,
                                               shock[0] + self.ur, shock[1] + self.ur,
                                               outline = "red", width = 3)
         else:
-            # makes 'the rat' (i.e. two black points)
-            self.ld = 150 - d - 4 # 4 is size of the rat dot
-            self.ur = 150 - d + 4
-            
+            data = [line[2:4] for count, line in enumerate(self.cm.data) if
+                    self.minTime <= line[1] <= self.maxTime]
+            self.roomCanv.create_line(([item + 150 - r for line in data[::5] for item in line]),
+                                      fill = "black", width = 2)
+
+    def _initializeAnimation(self):
+        r = self.r
+        # initial position
+        for line in self.cm.data:
+            if line[1] < self.minTime:
+                continue                       
+            else:
+                curLine = line
+                break
+        else:
+            self.status.set("Invalid start time set.")
+            self.bell()
+            return
+        
+        # makes 'the rat' (i.e. two black points)
+        self.ld = 150 - r - 4 # 4 is size of the rat dot
+        self.ur = 150 - r + 4
+
+        if m.mode == "CM":            
             Rx, Ry = curLine[2:4]
             Ax, Ay = curLine[7:9]
+        else:
+            Ax, Ay = curLine[2:4]
 
-            if self.showTailVar.get(): 
-                self.arenaCanv.create_line((Ax + 149 - d, Ay + 149 - d, Ax + 151 - d,
-                                            Ay + 151 - d), fill = "blue", width = 2,
-                                           tag = "trailA")
-                self.roomCanv.create_line((Rx + 149 - d, Ry + 149 - d, Rx + 151 - d, Ry + 151 - d),
-                                          fill = "blue", width = 2, tag = "trailR")   
-
-            self.arenaCanv.create_oval(Ax + self.ld, Ay + self.ld, Ax + self.ur, Ay + self.ur,
-                                       fill = "black", tags = "ratA")
+        if self.showTailVar.get():
+            self.arenaCanv.create_line((Ax + 149 - r, Ay + 149 - r, Ax + 151 - r,
+                                        Ay + 151 - r), fill = "blue", width = 2,
+                                       tag = "trailA")
+            
+        if m.mode == "CM":
+            self.roomCanv.create_line((Rx + 149 - r, Ry + 149 - r, Rx + 151 - r, Ry + 151 - r),
+                                      fill = "blue", width = 2, tag = "trailR")   
             self.roomCanv.create_oval(Rx + self.ld, Ry + self.ld, Rx + self.ur, Ry + self.ur,
                                        fill = "black", tags = "ratR")
-                                                 
-            # shock
-            if curLine[6] > 0:
-                self.roomCanv.itemconfigure("ratR", fill = "red", outline = "red")
-                self.shock = True   
-            else:
-                self.shock = False
 
+        self.arenaCanv.create_oval(Ax + self.ld, Ay + self.ld, Ax + self.ur, Ay + self.ur,
+                                   fill = "black", tags = "ratA")
+                                             
+        self._setShockColor(curLine)
+                
 
-        # initializes distance and entrances displays
+    def _setParameterDisplays(self, timeReset):
         self.totDistanceVar.set(self.cm.getDistance(time = self.maxTime / 60000,
                                                     startTime = self.minTime / 60000))
         self.totEntrancesVar.set(self.cm.getEntrances(time = self.maxTime / 60000,
@@ -749,16 +824,7 @@ class Explorer(ttk.Frame):
             self.entrancesVar.set("0")
             self.selectedPVar.set("-")
 
-        # drawing of the graph
-        self.graph.delete("all")
-        if timeReset:
-            self.graph.CM_loaded(self.cm, minTime = self.minTime, maxTime = self.maxTime)
-        else:
-            self.graph.CM_loaded(self.cm, minTime = self.minTime, maxTime = self.maxTime,
-                                 initTime = (self.curTime.get() * (self.maxTime - self.minTime) /
-                                             100 + self.minTime))
-
-        # changing buttons' statuses
+    def _changeButtonStatuses(self):
         if not self.showTrackVar.get():
             self.playBut.state(["!disabled"])
             self.pauseBut.state(["!disabled"])
@@ -770,21 +836,7 @@ class Explorer(ttk.Frame):
             self.stopBut.state(["disabled"])
             self.timeSc.state(["disabled"])
 
-
-        self.initialized = True
-        
-        if self.fileStorage.comments[filename]:
-            comment = self.fileStorage.comments[filename].replace("\n", "\t")
-            if len(comment) > 150:
-                comment = comment[:149] + "(...)"
-            self.status.set(comment)
-        
-        if new and timeReset:
-            self.curTime.set(0)
-            self.timeVar.set(self._timeFormat(self.minTime))  
-
-
-        
+       
     def changedGraph(self):
         "called when the graph is changed"
         self.graph.delete("all")

@@ -22,6 +22,7 @@ from tkinter import ttk
 from math import degrees, atan2, floor
 
 from optionget import optionGet
+import mode as m
 
 
 def getGraphTypes():
@@ -283,15 +284,16 @@ class SpeedGraph(Graphs, SvgGraph):
            e.g. when skip = 12 and smooth = 2, speed is computed as an average of two speeds
                computed from lines separated by 11 lines
         """
+        indices = slice(7, 9) if m.mode == "CM" else slice(2, 4)
         resolution = cm.trackerResolution
 
         # saving speed between every 'skip' data point ... in centimeters per second
         start = cm.findStart(self.minTime / 60000)
         self.speed = []
-        x0, y0 = cm.data[start][7:9]
+        x0, y0 = cm.data[start][indices]
         t0 = cm.data[start][1]
         for line in cm.data[(start + skip)::skip]:
-            x1, y1 = line[7:9]
+            x1, y1 = line[indices]
             t1 = line[1]
             speed = ((((x1 - x0)**2 + (y1 - y0)**2)**0.5) / resolution) / ((t1 - t0) / 1000)
             self.speed.append(speed)
@@ -354,25 +356,31 @@ class DistanceFromCenterGraph(Graphs, SvgGraph):
         """computes distances from center of the graph
            parameter smooth controls how many data points should be averaged
         """
-        start = CM.findStart(self.minTime / 60000)
+        start = cm.findStart(self.minTime / 60000)
 
         self.radius = cm.radius
-        Cx, Cy = cm.getCenterX(), cm.getCenterY()
+        Cx, Cy = cm.centerX, cm.centerY
 
-        dists = [((line[2] - Cx)**2 + (line[3] - Cy)**2)**0.5 for line in cm.data[start:] if
-                 line[1] <= self.maxTime]
+        if m.mode != "OF":
+            dists = [((line[2] - Cx)**2 + (line[3] - Cy)**2)**0.5 for line in cm.data[start:] if
+                     line[1] <= self.maxTime]
+        else:
+            r = self.radius
+            lb, tb, rb, bb = Cx - r, Cy + r, Cx + r, Cy - r 
+            dists = [r - min([line[2]-lb, rb-line[2], line[3]-bb, tb-line[3]]) for line in
+                     cm.data[start:] if line[1] <= self.maxTime]            
         self.points = [(sum(dists[(i * smooth):((i * smooth) + smooth)]) / smooth) for i
                        in range(len(dists) // smooth)]       
 
         self.maxY = self.radius + 10
         
 
-    def CM_loaded(self, CM, initTime = 0, minTime = 0, maxTime = "max"):
+    def CM_loaded(self, cm, initTime = 0, minTime = 0, maxTime = "max"):
         """creates graph when CM file is loaded
            parameter initTime is the time of the player when the graph is initialized
         """
-        super().CM_loaded(CM, minTime, maxTime, initTime)
-        self.compute(CM)
+        super().CM_loaded(cm, minTime, maxTime, initTime)
+        self.compute(cm)
         
         self.create_line((0, 10, self.width, 10), fill = "grey")
 
@@ -428,13 +436,13 @@ class AngleGraph(Graphs, SvgGraph):
         
         self.compute(cm)
 
-        wid = cm.width
         # drawing lines representing the sector
-        y1 = ((360 - (wid / 2)) / 360) * self.height
-        y2 = ((wid / 2) / 360) * self.height
-
-        self.create_line((0, y1, self.width, y1), fill = "red")
-        self.create_line((0, y2, self.width, y2), fill = "red")
+        if m.mode == "CM":
+            wid = cm.width   
+            y1 = ((360 - (wid / 2)) / 360) * self.height
+            y2 = ((wid / 2) / 360) * self.height
+            self.create_line((0, y1, self.width, y1), fill = "red")
+            self.create_line((0, y2, self.width, y2), fill = "red")
 
         # drawing the graph
         maxX = len(self.angles) - self.crosses

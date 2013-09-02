@@ -29,6 +29,7 @@ from helpCMM import HelpCM
 from tools import saveFileStorage, loadFileStorage
 from window import placeWindow
 import version
+import mode
 
 
 
@@ -37,16 +38,21 @@ class MenuCM(Menu):
     def __init__(self, root):
         super().__init__(root)
         self.root = root
+        self.task = StringVar()
+        self.task.set("OF") # ZMENIT NA NASTAVENE V OPTIONS
+        self.changedTask()
 
         self.menu_file = Menu(self)
         self.menu_options = Menu(self)
         #self.menu_tools = Menu(self) # for future
+        self.menu_task = Menu(self)
         self.menu_help = Menu(self)
         
         menuWidth = 8
         self.add_cascade(menu = self.menu_file, label = "{:^{}}".format("File", menuWidth))
         self.add_cascade(menu = self.menu_options, label = "{:^{}}".format("Options", menuWidth))
         #self.add_cascade(menu = self.menu_tools, label = "{:^{}}".format("Tools", menuWidth))
+        self.add_cascade(menu = self.menu_task, label = "{:^{}}".format("Task", menuWidth))
         self.add_cascade(menu = self.menu_help, label = "{:^{}}".format("Help", menuWidth))
 
         self.menu_file.add_command(label = "Load selected files", command = self.loadSavedFiles)
@@ -57,6 +63,12 @@ class MenuCM(Menu):
         self.menu_options.add_command(label = "Parameter settings", command = self.advOptions)
         self.menu_options.add_separator()
         self.menu_options.add_command(label = "Reset all options", command = self.resetOptions)
+        self.menu_task.add_radiobutton(label = "Carousel Maze", variable = self.task, value = "CM",
+                                       command = self.changedTask)
+        self.menu_task.add_radiobutton(label = "Morris Watter Maze", variable = self.task,
+                                       value = "MWM", command = self.changedTask)
+        self.menu_task.add_radiobutton(label = "Open Field", variable = self.task, value = "OF",
+                                       command = self.changedTask)
         self.menu_help.add_command(label = "About", command = self.about)
         self.menu_help.add_command(label = "Citation", command = self.citation)
         self.menu_help.add_separator()
@@ -92,7 +104,13 @@ class MenuCM(Menu):
                                    default = "no")
         filename = os.path.join(os.getcwd(), "Stuff", "Options.txt")
         if answ and os.path.exists(filename):
-            os.remove(filename)            
+            os.remove(filename)
+
+    def changedTask(self):
+        if self.task.get() != mode.mode:
+            mode.changeMode(self.task.get())
+        # add some other stuff
+        # VELMI DULEZITE TOTO DODELAT !!!
 
     def helpCM(self):
         try:
