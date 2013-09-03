@@ -17,36 +17,9 @@ You should have received a copy of the GNU General Public License
 along with Carousel Maze Manager.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from collections import namedtuple
-
-
-from cm import CM
-from mwm import MWM
-from openfield import OF
-
-
-mode = None
-CL = None
-files = None
-fs = {}
-slaves = {}
-name = ""
-
-
-Task = namedtuple("Task", ["constructor", "files"])
-Slaves = namedtuple("Slaves", ["processor", "explorer", "controller"])
-
-dispatch = {"CM": Task(CM, "pair"),
-            "MWM": Task(MWM, "one"),
-            "OF": Task(OF, "one")}
-
-fullname = {"CM": "Carousel maze",
-            "MWM": "Morris watter maze",
-            "OF": "Open field"}
-
-def changeMode(newMode):
-    global mode, CL, files, name
-    mode = newMode
-    CL = dispatch[mode].constructor
-    files = dispatch[mode].files
-    name = fullname[mode]
+def median(lst):
+    sortd = sorted(lst)
+    length = len(sortd)
+    if not (length % 2):
+        return (sortd[length // 2] + sortd[length // 2 - 1]) / 2
+    return sortd[length // 2]

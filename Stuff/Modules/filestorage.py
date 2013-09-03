@@ -21,8 +21,7 @@ from tkinter.filedialog import askopenfilenames, askdirectory, askopenfilename
 from tkinter import *
 from os.path import basename
 from tkinter import ttk
-from collections import defaultdict, deque, OrderedDict
-import os.path
+from collections import defaultdict, OrderedDict
 import os
 
 
@@ -31,10 +30,11 @@ from optionget import optionGet
 from window import placeWindow
 from cm import CM
 from comment import Comment, commentColor
+from recognizefiles import recognizeFiles
 import mode as m
 
 
-class FileStorage(object):
+class FileStorage():
     "class for storing files for processing"  
     def __init__(self):
         self.arenafiles = []
@@ -103,9 +103,9 @@ class FileStorage(object):
             self.reflections[file].update(points)
         else:
             if file in self.pairedfiles:
-                cm = CM(file, nameR = self.pairedfiles[file])
+                cm = m.CL(file, nameR = self.pairedfiles[file])
             else:
-                cm = CM(file, nameR = "auto")
+                cm = m.CL(file, nameR = "auto")
             reflections = cm.findReflections(results = "indices")
             self.reflections[file] = set(reflections[0]) | set(reflections[1]) | points
 
@@ -748,72 +748,4 @@ class FileStorageFrame(ttk.Frame):
         return recognizeFiles(cmfiles)
 
 
-
-
-def recognizeFiles(filenames):
-    """from list of filenames provided by parameter recognizes matching files and returns two lists
-    - first containing names of non-matching files and second containing list of arenafiles with
-    matching room files counterparts
-    matching files are those for which other file with the same name except from 'room' 'Arena'
-    etc. exists in the same directory"""
-    filenames.sort()
-    if m.files == "one":
-        return [], [os.path.normpath(file) for file in filenames]
-    filenames = deque(os.path.normpath(file) for file in filenames)
-    arenaFiles = []
-    nonmatchingFiles = []
-    while filenames:
-        first = filenames.popleft()
-        name = basename(first)
-        splitName = os.path.split(first)
-        if "Arena" in name or "arena" in name:
-            base = splitName[1].replace("Arena", "Room").replace("arena", "room")
-            roomName = os.path.join(splitName[0], base)
-            if roomName in filenames:
-                arenaFiles.append(first)             
-                filenames.remove(roomName)
-            elif os.path.exists(roomName):
-                arenaFiles.append(first)  
-            else:
-                nonmatchingFiles.append(first)
-        elif "Room" in name or "room" in name:
-            base = splitName[1].replace("Room", "Arena").replace("room", "arena")
-            arenaName = os.path.join(splitName[0], base)
-            if arenaName in filenames:
-                arenaFiles.append(arenaName)
-                filenames.remove(arenaName)
-            elif os.path.exists(arenaName):
-                arenaFiles.append(arenaName)
-            else:
-                nonmatchingFiles.append(first)                      
-        else:
-            nonmatchingFiles.append(first)
-    return nonmatchingFiles, arenaFiles 
-
-
-
-
-def main():
-    class Root():
-        def __init__(self, root):
-            if root:
-                self.root = root
-            else:
-                self.fileStorage = FileStorage()
-    testGUI = Tk()
-    testGUI.root = Root(Root(False))
-    testingDir = os.path.join(os.getcwd(), "TestingFiles")
-    files = recognizeFiles([os.path.join(testingDir, file) for file in os.listdir(testingDir)])
-    testGUI.root.root.fileStorage.addFiles(files)
-    testGUI.root.root.fileStorage.tag(files[1][1])
-    testGUI.showfiles = ShowFiles(testGUI, "wrongfiles")
-    testGUI.showfiles.grid()
-    testGUI.wm_withdraw()
-    testGUI.mainloop()
-
-
-
-
-
-if __name__ == "__main__": main()
 

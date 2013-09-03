@@ -27,9 +27,6 @@ import os
 import sys
 
 
-from controller import Controller
-from explorer import Explorer
-from processor import Processor
 from menu import MenuCM
 from filestorage import FileStorage
 from optionget import optionGet
@@ -43,9 +40,9 @@ class GUI(Tk):
     def __init__(self):
         super().__init__()
    
-        self.title("CM Manager " + ".".join(version()))
         self.option_add("*tearOff", FALSE)
         self.resizable(FALSE, FALSE)
+        self.initialized = False
         
         '''
         # used when size of the window is changed for placeWindow arguments     
@@ -54,31 +51,29 @@ class GUI(Tk):
         '''
         placeWindow(self, 1010, 834)
 
-        # notebook
         self.selectFunction = ttk.Notebook(self)
         self.selectFunction.grid()
 
-        # FileStorage is associated with the Notebook
-        self.selectFunction.fileStorage = FileStorage()
-        
-        self.processor = Processor(self.selectFunction)
-        self.explorer = Explorer(self.selectFunction)
-        self.controller = Controller(self.selectFunction)
-
-        notepageWidth = 20
-        self.selectFunction.add(self.processor, text = "{:^{}}".format("Process", notepageWidth))
-        self.selectFunction.add(self.explorer, text = "{:^{}}".format("Explore", notepageWidth))
-        self.selectFunction.add(self.controller, text = "{:^{}}".format("Control", notepageWidth))
-
-        self.selectFunction.bind("<<NotebookTabChanged>>", lambda e: self.checkProcessing(e))
-
-        # menu
         self["menu"] = MenuCM(self)
 
         if not optionGet("Developer", False, 'bool'):
             self.protocol("WM_DELETE_WINDOW", self.closeFun)
 
+        self.initialized = True
         self.mainloop()
+
+
+    def changeSlaves(self):
+        "creates notepages whenever mode is changed or GUI is initialized"
+        for child in self.selectFunction.tabs():
+            self.selectFunction.forget(child)
+            
+        notepageWidth = 20
+        self.selectFunction.add(self.processor, text = "{:^{}}".format("Process", notepageWidth))
+        self.selectFunction.add(self.explorer, text = "{:^{}}".format("Explore", notepageWidth))
+        self.selectFunction.add(self.controller, text = "{:^{}}".format("Control", notepageWidth))
+
+        self.selectFunction.bind("<<NotebookTabChanged>>", lambda e: self.checkProcessing())
 
 
     def closeFun(self):
@@ -91,7 +86,12 @@ class GUI(Tk):
         self.destroy()
 
 
-    def checkProcessing(self, event):
+    def changeTitle(self, mode):
+        "changes the title of the GUI"
+        self.title("CM Manager " + ".".join(version()) + "  (mode: {})".format(mode))
+
+
+    def checkProcessing(self):
         """checks whether it is possible for processor and controller to process files and change
         states of buttons accordingly"""
         self.processor.checkProcessing()

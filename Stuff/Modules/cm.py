@@ -24,7 +24,7 @@ import os
 
 
 from optionget import optionGet
-from statistics import median
+from funcs import median
 
 
 

@@ -23,13 +23,19 @@ from urllib.request import urlopen
 import webbrowser
 import os
 
+
+from controller import Controller
+from explorer import Explorer
+from processor import Processor
 from options import OptionsCM, AdvancedOptions
 from optionwrite import optionWrite
+from optionget import optionGet
 from helpCMM import HelpCM
 from tools import saveFileStorage, loadFileStorage
 from window import placeWindow
+from filestorage import FileStorage
 import version
-import mode
+import mode as m
 
 
 
@@ -39,7 +45,7 @@ class MenuCM(Menu):
         super().__init__(root)
         self.root = root
         self.task = StringVar()
-        self.task.set("OF") # ZMENIT NA NASTAVENE V OPTIONS
+        self.task.set(optionGet("DefaultTask", "CM", 'str'))
         self.changedTask()
 
         self.menu_file = Menu(self)
@@ -107,8 +113,33 @@ class MenuCM(Menu):
             os.remove(filename)
 
     def changedTask(self):
-        if self.task.get() != mode.mode:
-            mode.changeMode(self.task.get())
+        if self.task.get() != m.mode:
+            if m.mode in m.slaves:
+                m.slaves[m.mode][1] = self.root.selectFunction.select()
+            
+            m.changeMode(self.task.get())
+            
+            if m.mode not in m.fs:
+                m.fs[m.mode] = FileStorage()
+            self.root.selectFunction.fileStorage = m.fs[m.mode]
+            
+            if m.mode not in m.slaves:
+                m.slaves[m.mode] = [m.Slaves(Processor(self.root.selectFunction),
+                                             Explorer(self.root.selectFunction),
+                                             Controller(self.root.selectFunction)
+                                             ),
+                                    None
+                                    ]
+            self.root.processor = m.slaves[m.mode][0].processor
+            self.root.explorer = m.slaves[m.mode][0].explorer
+            self.root.controller = m.slaves[m.mode][0].controller            
+            self.root.changeSlaves()
+            if m.slaves[m.mode][1]:
+                self.root.selectFunction.select(m.slaves[m.mode][1])
+
+            self.root.changeTitle(m.name)
+            
+            optionWrite("DefaultTask", "'" + self.task.get() + "'")         
         # add some other stuff
         # VELMI DULEZITE TOTO DODELAT !!!
 
