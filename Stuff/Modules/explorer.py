@@ -192,7 +192,7 @@ class Explorer(ttk.Frame):
         self.fileStorageFrame.grid(column = 8, row = 0, pady = 2, padx = 3, sticky = (N, W))
         self.fileFrame.grid(column = 8, row = 1, rowspan = 4, padx = 3, sticky = (N, S))
         self.parametersLF.grid(column = 3, row = 3, columnspan = 3)
-        self.timeLabFrame.grid(column = 2, row = 5, columnspan = 3, sticky = (W, N), pady = 2)        
+        self.timeLabFrame.grid(column = 1, row = 5, columnspan = 4, sticky = (N, W), pady = 2)        
         self.timeFrame.grid(column = 0, row = 0)
         self.arenaFrame.grid(column = 0, row = 0, rowspan = 2, columnspan = 3,
                              sticky = (N, S, E, W), padx = 2, pady = 2)
@@ -212,9 +212,9 @@ class Explorer(ttk.Frame):
         self.stopBut.grid(column = 2, row = 0, sticky = (N, S), padx = 2, pady = 2)
         self.saveBut.grid(column = 1, row = 2, sticky = E)
 
-        self.removeReflections.grid(column = 0, row = 2, padx = 2, pady = 2, sticky = (N, W))
-        self.showShocks.grid(column = 0, row = 3, padx = 2, pady = 2, sticky = (N, W))
-        self.showTail.grid(column = 0, row = 4, padx = 2, pady = 2, sticky = (N, W))
+        self.removeReflections.grid(column = 1, row = 0, padx = 3, pady = 2, sticky = (N, W))
+        self.showShocks.grid(column = 1, row = 1, padx = 3, pady = 2, sticky = (N, W))
+        self.showTail.grid(column = 1, row = 2, padx = 3, pady = 2, sticky = (N, W))
 
         self.showAnimation.grid(column = 0, row = 0, padx = 2, pady = 1, sticky = (N, W))
         self.showTrack.grid(column = 0, row = 1, padx = 2, pady = 1, sticky = (N, W))

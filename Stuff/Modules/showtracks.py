@@ -21,9 +21,9 @@ from tkinter import *
 from tkinter import ttk
 
 from commonframes  import TimeFrame, returnName
-from cm import CM
 from optionget import optionGet
 from comment import Comment, commentColor
+import mode as m
 
 
 class ShowTracks(Toplevel):
@@ -154,9 +154,9 @@ class ShowTracks(Toplevel):
     def _initializeCM(self, file):
         "initializes self.cm"
         if file in self.fileStorage.pairedfiles:
-            self.cm = CM(file, nameR = self.fileStorage.pairedfiles[file])
+            self.cm = m.CL(file, self.fileStorage.pairedfiles[file])
         else:
-            self.cm = CM(file, nameR = "auto")                     
+            self.cm = m.CL(file, "auto")                     
         
                         
     def drawTracks(self, new = True):
@@ -201,7 +201,7 @@ class TrackCanvas(Canvas):
         self.removed = set()
         self.addedReflections = set()
         self.data = []
-        self.d = None
+        self.r = None
         self.bind("<3>", lambda e: self.root.popUp(e, canvas = self))
 
 
@@ -227,17 +227,18 @@ class TrackCanvas(Canvas):
         self.root.drawTracks(new = True)
 
 
-    def drawTrack(self, diameter, data):
+    def drawTrack(self, radius, data):
         "draws an arena and track"
         self.delete("all")
         self.data = data
         self.removed = set()
         
         if len(data) > 1:
-            self.d = diameter
-            self.create_oval(140 - self.d, 140 - self.d, 140 + self.d, 140 + self.d,
-                             outline = "black", width = 2)
-            lines = [item + 140 - self.d for row in self.data for item in row[0:2]]
+            self.r = radius
+            fun = self.create_rectangle if m.mode == "OF" else self.create_oval
+            fun(140 - self.r, 140 - self.r, 140 + self.r, 140 + self.r,
+                outline = "black", width = 2)
+            lines = [item + 140 - self.r for row in self.data for item in row[0:2]]
             self.create_line((lines), fill = "black", width = 2, tag = "trajectory")
             
         if self.data:
@@ -271,7 +272,7 @@ class TrackCanvas(Canvas):
 
     def click(self, event):
         "called on mouse click - removes reflections"
-        x, y = event.x - 140 + self.d, event.y - 140 + self.d
+        x, y = event.x - 140 + self.r, event.y - 140 + self.r
         newlyRemoved = {row[2] for row in self.data if row[2] not in self.removed and
                              ((row[0] - x)**2 + (row[1] - y)**2)**0.5 < self.root.size}
 
@@ -289,7 +290,7 @@ class TrackCanvas(Canvas):
                     newlyRemoved.add(point)
             self.removed.update(newlyRemoved)
                        
-            lines = [item + 140 - self.d for row in self.data for item in row[0:2] if not
+            lines = [item + 140 - self.r for row in self.data for item in row[0:2] if not
                      row[2] in self.removed]
             if len(lines) >= 4: 
                 self.create_line((lines), fill = "black", width = 2, tag = "trajectory")      
@@ -401,21 +402,26 @@ class FileTree(ttk.Frame):
                                     columnspan = 2)
 
         # frame radiobuttons       
-        self.frameFrame = ttk.Labelframe(self.bottomFrame, text = "Frame")
-        self.frameFrame.grid(column = 2, row = 0, padx = 5, rowspan = 2, pady = 3, sticky = N)
-
         self.frameVar = StringVar()
-        self.frameVar.set("arena")
         
-        self.arenaFrameRB = ttk.Radiobutton(self.frameFrame, text = "Arena",
-                                            variable = self.frameVar, value = "arena",
-                                            command = self.toggleFrame)
-        self.arenaFrameRB.grid(column = 0, row = 0, pady = 2)
+        if m.mode == "CM":
+            self.frameVar.set("arena")
+        else:
+            self.frameVar.set("room")
         
-        self.roomFrameRB = ttk.Radiobutton(self.frameFrame, text = "Room",
-                                           variable = self.frameVar, value = "room",
-                                           command = self.toggleFrame)
-        self.roomFrameRB.grid(column = 0, row = 1, pady = 2)
+        if m.mode == "CM":
+            self.frameFrame = ttk.Labelframe(self.bottomFrame, text = "Frame")
+            self.frameFrame.grid(column = 2, row = 0, padx = 5, rowspan = 2, pady = 3, sticky = N)
+            
+            self.arenaFrameRB = ttk.Radiobutton(self.frameFrame, text = "Arena",
+                                                variable = self.frameVar, value = "arena",
+                                                command = self.toggleFrame)
+            self.arenaFrameRB.grid(column = 0, row = 0, pady = 2)
+            
+            self.roomFrameRB = ttk.Radiobutton(self.frameFrame, text = "Room",
+                                               variable = self.frameVar, value = "room",
+                                               command = self.toggleFrame)
+            self.roomFrameRB.grid(column = 0, row = 1, pady = 2)
 
 
 
@@ -633,24 +639,3 @@ class FileTree(ttk.Frame):
             self.checkTag()
 
 
-
-def main():
-    import os.path
-    import os
-    from filestorage import FileStorage, recognizeFiles
-    testGUI = Tk()
-    testGUI.fileStorage = FileStorage()
-    testGUI.timeFrame = TimeFrame(testGUI)
-    testingDir = os.path.join(os.getcwd(), "TestingFiles")
-    files = recognizeFiles([os.path.join(testingDir, file) for file in os.listdir(testingDir)])
-    testGUI.fileStorage.addFiles(files)
-    testGUI.fileStorage.tag(files[1][1])
-    testGUI.showtracks = ShowTracks(testGUI, files[1], files[1][1])
-    testGUI.showtracks.grid()
-    testGUI.showtracks.controlled = True
-    testGUI.wm_withdraw()
-    testGUI.mainloop()
-
-
-
-if __name__ == "__main__": main()

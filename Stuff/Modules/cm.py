@@ -51,6 +51,7 @@ class CM:
         self.nameA = nameA
         self.data = []
         self.interpolated = set()
+        self.indices = slice(7,9)
 
         # automatic room frame filename creation
         self._setRoomName(nameR)
@@ -275,16 +276,15 @@ class CM:
         beginMiss = 0
         
         for line in self.data:
-            if (line[2] == 0 and line [3] == 0) or (line[7] == 0 and line[8] == 0):
+            if (line[2] == 0 and line[3] == 0) or (line[7] == 0 and line[8] == 0):
                 beginMiss += 1
             else:
                 if beginMiss != 0:
                     self.data = self.data[beginMiss:]
                     for i in range(len(self.data)):
                         self.data[i][0] -= beginMiss
+                    self.interpolated = {p - beginMiss for p in self.interpolated}
                 break
-
-
 
 
     @property
@@ -300,8 +300,7 @@ class CM:
         self._centerAngle = value
 
 
-    def getDistance(self, skip = 25, time = 20, startTime = 0, minDifference = 0,
-                    indices = slice(7,9)):
+    def getDistance(self, skip = 25, time = 20, startTime = 0, minDifference = 0):
         """computes total distance travelled (in metres),
         argument 'skip' controls how many rows are skipped in distance computation,
         argument 'time' is time of the session,
@@ -309,10 +308,10 @@ class CM:
         dist = 0
         time = time * 60000 # conversion from minutes to miliseconds
         start = self.findStart(startTime)
-        x0, y0 = self.data[start][indices] 
+        x0, y0 = self.data[start][self.indices] 
         for content in self.data[(start + skip)::skip]:
             if content[1] <= time:
-                x1, y1 = content[indices]
+                x1, y1 = content[self.indices]
                 diff = ((x1 - x0)**2 + (y1 - y0)**2)**0.5
                 if diff > minDifference:
                     dist += diff
@@ -754,8 +753,8 @@ class CM:
             time = time * 60000
         startTime = startTime * 60000
 
-        x0, y0 = self.data[0][7:9]
-        x1, y1 = self.data[1][7:9]
+        x0, y0 = self.data[0][self.indices]
+        x1, y1 = self.data[1][self.indices]
         t1 = self.data[1][1]
         angle1 = degrees(atan2(x1 - x0, y1 - y0 + 0.0000001)) + 180
 
@@ -766,7 +765,7 @@ class CM:
         concernNum = 0
 
         for content in self.data[2:]:
-            x2, y2 = content[7:9]
+            x2, y2 = content[self.indices]
             t2 = content[1]
             angle2 = degrees(atan2(x2 - x1, y2 - y1 + 0.0000001)) + 180
 
@@ -804,42 +803,55 @@ class CM:
                 ((abs(row2[1] - row1[1]) / 1000) * self.trackerResolution)
         return speed # cm/s
 
-    def removeReflections(self, points = None, deleteSame = True):
+    def _findSame(self, indices, points):
+        occurences = set()
+        toDelete = set()
+        for point in points:
+            position = tuple(self.data[point][indices])
+            if position in occurences:
+                toDelete.add(position)
+                occurences.remove(position)
+            elif position not in toDelete:
+                occurences.add(position)
+        return toDelete
+
+    def _returnSame(self, missing):
+        toDeleteArena = self._findSame(slice(7,9), missing)
+        toDeleteRoom = self._findSame(slice(2,4), missing)
+        addMissing = {row[0] - 1 for row in self.data if tuple(row[2:4]) in toDeleteRoom or\
+                      tuple(row[7:9]) in toDeleteArena}
+        return addMissing
+
+    def _removalCondition(self, row, i, before, reflection):
+        """conditions in order of appearance:
+            large speed between the row and before row
+            same position as in the reflection row
+            we should expect the position to be closer to before row than to the
+            reflection row - determined by speed
+            wrong points in the row
+        """
+        return any((self._computeSpeed(self.data[row + i], before) > 250,
+                    self.data[row + i][2:4] == self.data[row][2:4],
+                    self.data[row + i][7:9] == self.data[row][7:9],
+                    self._computeSpeed(reflection, self.data[row + i]) * 30 <
+                    self._computeSpeed(before, self.data[row + i]),
+                    row + i in self.interpolated))        
+        
+
+    def removeReflections(self, points = None, deleteSame = True, bothframes = True):
         "removes reflections - hopefully"       
         # finding reflection points
         if points == None:
             points = self.findReflections(time = "max", startTime = 0, results = "indices")
             points = points[0] + points[1]
 
-        rows = {point - 1 for point in points}
+        missing = {point - 1 for point in points}
 
         # finds data points that share coordinates with more than two points with reflections      
         if deleteSame:
-            # Arena
-            occurences = set()
-            toDeleteArena = set()
-            for row in rows:
-                position = tuple(self.data[row][7:9])
-                if position in occurences:
-                    toDeleteArena.add(position)
-                    occurences.remove(position)
-                elif position not in toDeleteArena:
-                    occurences.add(position)
-            # Room
-            occurences = set()
-            toDeleteRoom = set()
-            for row in rows:
-                position = tuple(self.data[row][2:4])
-                if position in occurences:
-                    toDeleteRoom.add(position)
-                    occurences.remove(position)
-                elif position not in toDeleteRoom:
-                    occurences.add(position)
-
-            addMissing = {row[0] - 1 for row in self.data if tuple(row[2:4]) in toDeleteRoom or\
-                          tuple(row[7:9]) in toDeleteArena}
+            missing |= self._returnSame(missing)
                  
-        missing = sorted(rows | addMissing)
+        missing = sorted(missing)
 
         # 'removal' itself
         while missing:           
@@ -858,20 +870,7 @@ class CM:
             i = 1
             last = len(self.data)
             if row + i < last - 1:
-                while any((
-                    row + i in missing,
-                    self._computeSpeed(self.data[row + i], before) > 250,
-                    self.data[row + i][2:4] == self.data[row][2:4],
-                    self.data[row + i][7:9] == self.data[row][7:9],
-                    self._computeSpeed(reflection, self.data[row + i]) * 30 <
-                    self._computeSpeed(before, self.data[row + i]),
-                    row + i in self.interpolated)):
-                      # conditions in order of appearance:
-                      # large speed between the row and before row
-                      # same position as in the reflection row
-                      # we should expect the position to be closer to before row than to the
-                      #    reflection row - determined by speed
-                      # wrong points in the row
+                while row + i in missing or self._removalCondition(row, i, before, reflection):
                     if row + i not in missing:
                         missing.append(row + i)
                     i += 1
@@ -880,8 +879,9 @@ class CM:
                         afterID = row + i
                         for count in range(1, afterID - beforeID):
                             rw = beforeID + count
-                            self.data[rw][2:4] = before[2:4]           
-                            self.data[rw][7:9] = before[7:9]
+                            self.data[rw][2:4] = before[2:4]
+                            if bothframes:
+                                self.data[rw][7:9] = before[7:9]
                             missing.remove(rw)
                         return
                 after = self.data[row + i]
@@ -890,7 +890,8 @@ class CM:
                 # when the row-to-remove is the last one
                 for count, content in enumerate(self.data[row + i:]):
                     self.data[row + i + count][2:4] = before[2:4]
-                    self.data[row + i + count][7:9] = before[7:9]
+                    if bothframes:
+                        self.data[row + i + count][7:9] = before[7:9]
                 return
 
             # the actual replacement of positions
@@ -899,11 +900,12 @@ class CM:
                 self.data[rw][2] = ((after[2] - before[2]) / (afterID - beforeID)) \
                                     * (rw - beforeID) + before[2]
                 self.data[rw][3] = ((after[3] - before[3]) / (afterID - beforeID)) \
-                                    * (rw - beforeID) + before[3]                
-                self.data[rw][7] = ((after[7] - before[7]) / (afterID - beforeID)) \
-                                    * (rw - beforeID) + before[7]            
-                self.data[rw][8] = ((after[8] - before[8]) / (afterID - beforeID)) \
-                                    * (rw - beforeID) + before[8]
+                                    * (rw - beforeID) + before[3]
+                if bothframes:
+                    self.data[rw][7] = ((after[7] - before[7]) / (afterID - beforeID)) \
+                                        * (rw - beforeID) + before[7]            
+                    self.data[rw][8] = ((after[8] - before[8]) / (afterID - beforeID)) \
+                                        * (rw - beforeID) + before[8]
                 missing.remove(rw)
     
 
@@ -928,18 +930,18 @@ class CM:
         return round(proportion, 2)
 
 
-    def findJumpers(self, time = 20, startTime = 0, distance = 1):
+    def countOutsidePoints(self, time = 20, startTime = 0, distance = 1):
         "returns number of data points where an animal was outside the arena"
-        time = time * 60000
+        time *= 60000
         start = self.findStart(startTime)
 
-        diameter = self.radius
         Cx, Cy = self.centerX, self.centerY        
 
         outside = 0
         for content in self.data[start:]:
-            dist = ((content[7] - Cx)**2 + (content[8] - Cy)**2)**0.5
-            if dist > diameter + distance and content[1] <= time:
+            x, y = content[self.indices]
+            dist = ((x - Cx)**2 + (y - Cy)**2)**0.5
+            if dist > self.radius + distance and content[1] <= time:
                 outside += 1
 
         return outside

@@ -110,9 +110,24 @@ class MenuCM(Menu):
                                    default = "no")
         filename = os.path.join(os.getcwd(), "Stuff", "Options.txt")
         if answ and os.path.exists(filename):
-            os.remove(filename)
+            os.remove(filename)     
 
+    def helpCM(self):
+        try:
+            HelpCM(self.root)
+        except Exception as e:
+            messagebox.showinfo(message = e, title = "Error", icon = "error")
+            
+    def about(self):
+        AboutCM(self.root)
+        
     def changedTask(self):
+        """called when mode is changed
+            calls m.changeMode
+            puts old filestorage in m.fs[m.mode] and the self.root.[...].fileStorage is reassigned
+            saves old slaves of GUI's notebook and loads new
+            renames GUI and saves the mode selection to options
+        """
         if self.task.get() != m.mode:
             if m.mode in m.slaves:
                 m.slaves[m.mode][1] = self.root.selectFunction.select()
@@ -139,19 +154,7 @@ class MenuCM(Menu):
 
             self.root.changeTitle(m.name)
             
-            optionWrite("DefaultTask", "'" + self.task.get() + "'")         
-        # add some other stuff
-        # VELMI DULEZITE TOTO DODELAT !!!
-
-    def helpCM(self):
-        try:
-            HelpCM(self.root)
-        except Exception as e:
-            messagebox.showinfo(message = e, title = "Error", icon = "error")
-            
-    def about(self):
-        AboutCM(self.root)
-
+            optionWrite("DefaultTask", "'" + self.task.get() + "'")   
         
 
 class AboutCM(Toplevel):

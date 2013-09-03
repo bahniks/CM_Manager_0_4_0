@@ -57,7 +57,7 @@ def loadFileStorage(root):
             for key in loaded:
                 if key in current:
                     current[key] = loaded[key]
-        root.checkProcessing(None)
+        root.checkProcessing()
 
 
 def doesFileStorageRequiresSave(root):

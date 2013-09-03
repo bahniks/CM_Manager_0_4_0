@@ -270,9 +270,11 @@ class ShowFiles(Toplevel):
             self.untagFilesBut = ttk.Button(self.buttonFrame, text = "Untag Files",
                                             command = self.untagFilesFun)
             self.untagFilesBut.grid(column = 5, row = 0)
-            self.showWrongfilesBut = ttk.Button(self.buttonFrame, text = "Show Non-matched Files",
-                                                command = self.showWrongfilesFun)
-            self.showWrongfilesBut.grid(column = 7, row = 0)
+            if m.files == "pair":
+                self.showWrongfilesBut = ttk.Button(self.buttonFrame,
+                                                    text = "Show Non-matched Files",
+                                                    command = self.showWrongfilesFun)
+                self.showWrongfilesBut.grid(column = 7, row = 0)
 
 
         self.filesTree.bind("<3>", lambda e: self.popUp(e))
@@ -390,7 +392,7 @@ class ShowFiles(Toplevel):
                 menu.add_command(label = "Add tag", command = lambda: self.tagFun(item))
             menu.add_command(label = "Add comment", command = lambda: Comment(self, item))
             menu.add_separator()
-            if self.filesTree.identify("column", event.x, event.y) == "#0":
+            if self.filesTree.identify("column", event.x, event.y) == "#0" and m.files == "pair":
                 menu.add_command(label = "Open room file",
                                  command = lambda: self.openRoomFile(item))
                 menu.add_separator()
@@ -519,9 +521,10 @@ class FileStorageFrame(ttk.Frame):
 
         # labels
         self.filesChosen = ttk.Label(self, text = "Number of selected files: ")
-        self.nonMatching = ttk.Label(self, text = "Number of non-matching files: ")
-        self.nonMatchingNum = ttk.Label(self, textvariable = self.nonMatchingVar, width = 4)
         self.filesChosenNum = ttk.Label(self, textvariable = self.chosenVar, width = 4)
+        if m.files == "pair":
+            self.nonMatching = ttk.Label(self, text = "Number of non-matching files: ")
+            self.nonMatchingNum = ttk.Label(self, textvariable = self.nonMatchingVar, width = 4)
 
         self.removeFiles.state(["disabled"])
                
@@ -532,17 +535,20 @@ class FileStorageFrame(ttk.Frame):
         self.loadFromLogBut.grid(column = 6, row = 2, sticky = (N, S, E, W), padx = 4, pady = 2)
 
         self.filesChosen.grid(column = 4, row = 0, sticky = (N, E, S))
-        self.nonMatching.grid(column = 4, row = 1, sticky = (N, E, S))
         self.filesChosenNum.grid(column = 5, row = 0, sticky = (N, W, S), padx = 4)
-        self.nonMatchingNum.grid(column = 5, row = 1, sticky = (N, W, S), padx = 4)
+        if m.files == "pair":
+            self.nonMatching.grid(column = 4, row = 1, sticky = (N, E, S))
+            self.nonMatchingNum.grid(column = 5, row = 1, sticky = (N, W, S), padx = 4)
 
         # event binding
-        self.filesChosen.bind("<Double-1>", lambda e: self.showArenafiles(e))
-        self.nonMatching.bind("<Double-1>", lambda e: self.showWrongfiles(e))
-        self.filesChosenNum.bind("<Double-1>", lambda e: self.showArenafiles(e))
-        self.nonMatchingNum.bind("<Double-1>", lambda e: self.showWrongfiles(e))
+        self.filesChosen.bind("<Double-1>", lambda e: self.showArenafiles(e))        
+        self.filesChosenNum.bind("<Double-1>", lambda e: self.showArenafiles(e))   
         self.filesChosen.bind("<3>", lambda e: self.popUp(e))
         self.filesChosenNum.bind("<3>", lambda e: self.popUp(e))
+        if m.files == "pair":
+            self.nonMatching.bind("<Double-1>", lambda e: self.showWrongfiles(e))
+            self.nonMatchingNum.bind("<Double-1>", lambda e: self.showWrongfiles(e))
+            
 
         
     def showArenafiles(self, event):

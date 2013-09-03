@@ -26,10 +26,10 @@ import os.path
 from showtracks import ShowTracks
 from commonframes  import TimeFrame, SaveToFrame, returnName
 from filestorage import FileStorageFrame
-from cm import CM
 from optionget import optionGet
 from processor import writeResults, ProgressWindow
 from comment import Comment, commentColor
+import mode as m
 
 
 class ControlSelection(ttk.Checkbutton):
@@ -45,8 +45,9 @@ class Controls(list):
     def __init__(self):
         self.controls = [["Reflections", """findReflections(time = time, startTime = startTime,
                             results = 'both')"""],
-                         ["Outside Points", """findJumpers(time = time, startTime = startTime,
-                           distance = optionGet('OutsidePointsDistance', 1, ['int', 'float']))"""],
+                         ["Outside Points", """countOutsidePoints(time = time,
+                           startTime = startTime, distance = optionGet('OutsidePointsDistance',
+                           1, ['int', 'float']))"""],
                          ["Bad Points", "countBadPoints(time = time, startTime = startTime)"]
                          ]
         
@@ -345,8 +346,11 @@ class Controller(ttk.Frame):
             menu.add_command(label = "Add tag", command = lambda: self.addTag(name))
         menu.add_command(label = "Add comment", command = lambda: Comment(self, name))
         menu.add_separator()
-        menu.add_command(label = "Open arena file", command = lambda: self.openFile("arena", name))
-        menu.add_command(label = "Open room file", command = lambda: self.openFile("room", name))
+        label = "Open arena file" if m.files == "pair" else "Open file"
+        menu.add_command(label = label, command = lambda: self.openFile("arena", name))
+        if m.files == "pair":
+            menu.add_command(label = "Open room file",
+                             command = lambda: self.openFile("room", name))
         menu.post(event.x_root, event.y_root)
         
     def controlPopUp(self, event):
@@ -464,9 +468,9 @@ class Controller(ttk.Frame):
             tag = "x" if file in self.fileStorage.tagged else " "
             try:
                 if file in self.fileStorage.pairedfiles:
-                    cm = CM(file, nameR = self.fileStorage.pairedfiles[file])
+                    cm = m.CL(file, self.fileStorage.pairedfiles[file])
                 else:
-                    cm = CM(file, nameR = "auto")
+                    cm = m.CL(file, "auto")
             except Exception:
                 self.problemOccured = True
                 for control in controls:
