@@ -169,7 +169,7 @@ def main():
         if os.path.exists(modules):
             sys.path.append(modules)
             from optionget import optionGet
-            if optionGet("Developer", False, 'bool'):
+            if optionGet("Developer", False, 'bool', True):
                 from starter import main as start
                 start()
                 return

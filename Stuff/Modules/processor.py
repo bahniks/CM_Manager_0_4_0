@@ -27,7 +27,7 @@ import csv
 
 from commonframes  import TimeFrame, SaveToFrame, returnName
 from filestorage import FileStorageFrame
-from cm import CM, Parameters
+from parameters import Parameters
 from optionget import optionGet
 from optionwrite import optionWrite
 from version import version
@@ -158,13 +158,13 @@ class Processor(ttk.Frame):
         output = self.saveToFrame.saveToVar.get()
         startTime = float(self.timeFrame.startTimeVar.get())
         time = float(self.timeFrame.timeVar.get())
-        separator = optionGet("ResultSeparator", ",", "str")
+        separator = optionGet("ResultSeparator", ",", "str", True)
         batchTime = self.selectedBatchTime if self.useBatchTimeVar.get() else None
         self.log = Log(methods, startTime, time, self.filesToProcess, self.fileStorage,
                        self.optionFrame.removeReflectionsWhere.get(), output,
                        batchTime = batchTime)
         self.someProblem = False
-        developer = optionGet("Developer", False, 'bool')
+        developer = optionGet("Developer", False, 'bool', True)
 
         # results header
         if self.useBatchTimeVar.get():
@@ -334,7 +334,8 @@ class Log():
     
     def writeLog(self):
         "writes the log"
-        filepath = optionGet("LogDirectory", os.path.join(os.getcwd(), "Stuff", "Logs"), "str")
+        filepath = optionGet("LogDirectory", os.path.join(os.getcwd(), "Stuff", "Logs"),
+                             "str", True)
         writeTime = localtime()
         self.filename = os.path.join(filepath, strftime("%y_%m_%d_%H%M%S", writeTime) + ".txt")
 
@@ -403,7 +404,7 @@ class Log():
         "writes information about file where the results were saved in a logfile"
         file = self.saveTo
         if not os.path.splitext(file)[1]:
-            file += optionGet("DefProcessOutputFileType", ".txt", "str")
+            file += optionGet("DefProcessOutputFileType", ".txt", "str", True)
         logfile.write("Results saved in:\n\t" + os.path.abspath(file) + "\n\n\n")
             
     def _writeFiles(self, logfile):
@@ -533,9 +534,9 @@ class ProgressWindow(Toplevel):
 def writeResults(file, results):
     "writes 'results' in a 'file'"
     if not os.path.splitext(file)[1]:
-        file = file + optionGet("DefProcessOutputFileType", ".txt", "str")
+        file = file + optionGet("DefProcessOutputFileType", ".txt", "str", True)
     if not os.path.dirname(file):
-        file = os.path.join(optionGet("ResultDirectory", os.getcwd(), "str"), file)
+        file = os.path.join(optionGet("ResultDirectory", os.getcwd(), "str"), file, True)
     if os.path.splitext(file)[1] == ".csv":
         results = [[item for item in line.split(",")] for line in results.split("\n")]
         with open(file, mode = "w", newline = "") as f:
@@ -654,11 +655,12 @@ class OptionFrame(ttk.Labelframe):
         self.saveComments = BooleanVar()
         self.showResults = BooleanVar()
 
-        self.processWhat.set(optionGet("ProcessWhat", "all files", "str"))
-        self.removeReflectionsWhere.set(optionGet("RemoveReflectionsWhere", "no files", "str"))
-        self.saveTags.set(optionGet("DefSaveTags", False, "bool"))
-        self.saveComments.set(optionGet("DefSaveComments", False, "bool"))
-        self.showResults.set(optionGet("DefShowResults", False, "bool"))        
+        self.processWhat.set(optionGet("ProcessWhat", "all files", "str", True))
+        self.removeReflectionsWhere.set(optionGet("RemoveReflectionsWhere", "no files",
+                                                  "str", True))
+        self.saveTags.set(optionGet("DefSaveTags", False, "bool", True))
+        self.saveComments.set(optionGet("DefSaveComments", False, "bool", True))
+        self.showResults.set(optionGet("DefShowResults", False, "bool", True))        
 
         # labels
         self.processLabel = ttk.Label(self, text = "Process")
@@ -782,16 +784,3 @@ class ProcessingProblemDialog(Toplevel):
     def resultsFun(self):
         "opens a file with results"
         os.startfile(self.root.saveToFrame.saveToVar.get())
-            
-
-
-def main():
-    from filestorage import FileStorage
-    testGUI = Tk()
-    testGUI.fileStorage = FileStorage()
-    processor = Processor(testGUI)
-    processor.grid()
-    testGUI.mainloop()
-
-
-if __name__ == "__main__": main()

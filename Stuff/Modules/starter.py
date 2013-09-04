@@ -33,6 +33,7 @@ from optionget import optionGet
 from version import version
 from window import placeWindow
 from tools import saveFileStorage, doesFileStorageRequiresSave
+import mode as m
 
 
 class GUI(Tk):
@@ -49,14 +50,16 @@ class GUI(Tk):
         self.after(250, lambda: print(self.winfo_width()))
         self.after(250, lambda: print(self.winfo_height()))
         '''
-        placeWindow(self, 1010, 834)
+        x, y = 1010, 788
+        self.minsize(x, y)
+        placeWindow(self, x, y)
 
         self.selectFunction = ttk.Notebook(self)
         self.selectFunction.grid()
 
         self["menu"] = MenuCM(self)
 
-        if not optionGet("Developer", False, 'bool'):
+        if not optionGet("Developer", False, 'bool', True):
             self.protocol("WM_DELETE_WINDOW", self.closeFun)
 
         self.initialized = True
@@ -76,13 +79,21 @@ class GUI(Tk):
         self.selectFunction.bind("<<NotebookTabChanged>>", lambda e: self.checkProcessing())
 
 
+    def _askForSave(self, mode):
+        "helper for asking to save files on exit (i.e. closeFun)"
+        text = "Do you want to save {} files before leaving?".format(m.fullname[mode])
+        answ = messagebox.askyesno(message = text, icon = "question", title = "Save files?")
+        if answ:
+            saveFileStorage(self, mode)
+
+
     def closeFun(self):
         "ask for saving files on exit"
-        if doesFileStorageRequiresSave(self):
-            answ = messagebox.askyesno(message = "Do you want to save files before leaving?",
-                                       icon = "question", title = "Save files?")
-            if answ:
-                saveFileStorage(self)                
+        if doesFileStorageRequiresSave(self, m.mode):
+            self.askForSave(m.mode)
+        for mode in m.fs:
+            if mode != m.mode and doesFileStorageRequiresSave(self, mode):
+                self.askForSave(mode)
         self.destroy()
 
 
@@ -102,7 +113,7 @@ class GUI(Tk):
             
 
 def main():
-    if optionGet("Developer", False, 'bool'):
+    if optionGet("Developer", False, 'bool', True):
         GUI()
     else:
         for directory in ["Bugs", "Logs", "Selected files"]:

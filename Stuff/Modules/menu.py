@@ -27,10 +27,10 @@ import os
 from controller import Controller
 from explorer import Explorer
 from processor import Processor
-from options import OptionsCM, AdvancedOptions
+from options import OptionsCM, AdvancedOptions, GeneralOptions
 from optionwrite import optionWrite
 from optionget import optionGet
-from helpCMM import HelpCM
+from helpcmm import HelpCM
 from tools import saveFileStorage, loadFileStorage
 from window import placeWindow
 from filestorage import FileStorage
@@ -45,7 +45,7 @@ class MenuCM(Menu):
         super().__init__(root)
         self.root = root
         self.task = StringVar()
-        self.task.set(optionGet("DefaultTask", "CM", 'str'))
+        self.task.set(optionGet("DefaultTask", "CM", 'str', general = True))
         self.changedTask()
 
         self.menu_file = Menu(self)
@@ -65,8 +65,12 @@ class MenuCM(Menu):
         self.menu_file.add_command(label = "Save selected files", command = self.saveLoadedFiles)
         self.menu_file.add_separator()
         self.menu_file.add_command(label = "Exit", command = self.exitCM)
-        self.menu_options.add_command(label = "Options", command = self.options)
-        self.menu_options.add_command(label = "Parameter settings", command = self.advOptions)
+        self.menu_options.add_command(label = m.fullname[m.mode] + " options",
+                                      command = self.options)
+        self.menu_options.add_command(label = "Parameter settings (" + m.fullname[m.mode] + ")",
+                                      command = self.advOptions)
+        self.menu_options.add_separator()
+        self.menu_options.add_command(label = "General options", command = self.generalOptions)
         self.menu_options.add_separator()
         self.menu_options.add_command(label = "Reset all options", command = self.resetOptions)
         self.menu_task.add_radiobutton(label = "Carousel Maze", variable = self.task, value = "CM",
@@ -97,6 +101,9 @@ class MenuCM(Menu):
     def advOptions(self):
         AdvancedOptions(self.root)
 
+    def generalOptions(self):
+        GeneralOptions(self.root)
+
     def saveLoadedFiles(self):
         saveFileStorage(self.root)
         
@@ -123,12 +130,22 @@ class MenuCM(Menu):
         
     def changedTask(self):
         """called when mode is changed
+            changes names in Options menu
+            exchanges Process, Explore, Control notepages
             calls m.changeMode
             puts old filestorage in m.fs[m.mode] and the self.root.[...].fileStorage is reassigned
             saves old slaves of GUI's notebook and loads new
             renames GUI and saves the mode selection to options
         """
         if self.task.get() != m.mode:
+            if m.mode:
+                oldname = m.fullname[m.mode]
+                newname = m.fullname[self.task.get()]
+                self.menu_options.entryconfigure("Parameter settings (" + oldname + ")",
+                                                 label = "Parameter settings (" + newname + ")")
+                self.menu_options.entryconfigure(oldname + " options",
+                                                 label = newname + " options")
+            
             if m.mode in m.slaves:
                 m.slaves[m.mode][1] = self.root.selectFunction.select()
             
@@ -154,7 +171,7 @@ class MenuCM(Menu):
 
             self.root.changeTitle(m.name)
             
-            optionWrite("DefaultTask", "'" + self.task.get() + "'")   
+            optionWrite("DefaultTask", "'" + self.task.get() + "'", general = True)   
         
 
 class AboutCM(Toplevel):

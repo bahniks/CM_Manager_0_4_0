@@ -17,16 +17,19 @@ You should have received a copy of the GNU General Public License
 along with Carousel Maze Manager.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import os.path
 import os
 
+import mode as m
 
-def optionGet(option, default, valueType):
+
+def optionGet(option, default, valueType, general = False):
     """returns option if it exists and has right type (as specified by valueType parameter),
     otherwise returns default value
     valueType can be specified either as a name of a type (e.g. "str") or as a list of types
     """
     try:
+        if not general:
+            option = m.mode + option
         optString = "%|" + option + "|%"
         infile = open(os.path.join(os.getcwd(), "Stuff", "Options.txt"), mode = "r")
 

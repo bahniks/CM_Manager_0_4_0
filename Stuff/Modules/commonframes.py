@@ -21,23 +21,30 @@ from tkinter.filedialog import asksaveasfilename
 from tkinter import *
 from os.path import basename
 from tkinter import ttk
+from collections import defaultdict
 import os.path
 import os
 
+
 from optionget import optionGet
+import mode as m
 
 
 class TimeFrame(ttk.Frame):
     "frame containing entries for choosing starting and stopping time"
-    instances = []
-    start = optionGet("DefStartTime", 0, ['int', 'float'])
-    stop = optionGet("DefStopTime", 20, ['int', 'float'])
+    instances = defaultdict(list)
+    start = {}
+    stop = {}
     
-    def __init__(self, root, onChange = False, observe = True):
+    def __init__(self, root, onChange = False, observe = True, loadtime = True):
         super().__init__(root)
+        if m.mode not in TimeFrame.start:
+            TimeFrame.start[m.mode] = optionGet("DefStartTime", 0, ['int', 'float'])
+        if m.mode not in TimeFrame.stop:
+            TimeFrame.stop[m.mode] = optionGet("DefStopTime", m.time[m.mode], ['int', 'float'])
         
         if observe:
-            TimeFrame.instances.append(self)
+            TimeFrame.instances[m.mode].append(self)
         self.observe = observe
 
         self.root = root
@@ -47,8 +54,12 @@ class TimeFrame(ttk.Frame):
         self.timeVar = StringVar()
         self.startTimeVar = StringVar()
 
-        self.timeVar.set(optionGet("DefStopTime", 20, ['int', 'float']))
-        self.startTimeVar.set(optionGet("DefStartTime", 0, ['int', 'float']))        
+        if loadtime:
+            self.startTimeVar.set(TimeFrame.start[m.mode])
+            self.timeVar.set(TimeFrame.stop[m.mode])            
+        else:
+            self.startTimeVar.set(optionGet("DefStartTime", 0, ['int', 'float']))  
+            self.timeVar.set(optionGet("DefStopTime", m.time[m.mode], ['int', 'float']))                  
 
         # labels
         self.startTimeLab = ttk.Label(self, text = "Start time:")
@@ -80,27 +91,31 @@ class TimeFrame(ttk.Frame):
     def validateTotal(self, newValue):
         "validation of total time - checks if new entry is digits only"
         if not newValue.isdigit() or eval(newValue) <= eval(self.startTimeVar.get()):
-            self.timeVar.set("20")
+            t = max([optionGet("DefStopTime", m.time[m.mode], ['int', 'float']),
+                     eval(self.startTimeVar.get()) + 1])
+            self.timeVar.set(str(t))
             self.bell()
         elif self.onChange:
                 self.root.root.setTime()
         if self.observe:
-            for tf in TimeFrame.instances:
+            for tf in TimeFrame.instances[m.mode]:
                 tf.timeVar.set(self.timeVar.get())
-                TimeFrame.stop = self.timeVar.get()
+            TimeFrame.stop[m.mode] = self.timeVar.get()
         return True
 
     def validateStart(self, newValue):
         "validation of start time - checks if new entry is digits only"
         if not newValue.isdigit() or eval(newValue) >= eval(self.timeVar.get()):
-            self.startTimeVar.set("0")
+            t = min([optionGet("DefStartTime", 0, ['int', 'float']),
+                     eval(self.timeVar.get()) - 1])
+            self.startTimeVar.set(str(t))
             self.bell()
         elif self.onChange:
             self.root.root.setTime()
         if self.observe:
-            for tf in TimeFrame.instances:
+            for tf in TimeFrame.instances[m.mode]:
                 tf.startTimeVar.set(self.startTimeVar.get())
-                TimeFrame.start = self.startTimeVar.get()
+            TimeFrame.start[m.mode] = self.startTimeVar.get()
         return True
 
     def changeState(self, state):
@@ -137,9 +152,10 @@ class SaveToFrame(ttk.Frame):
     def saveAs(self):
         "asks user to select file where to save output"
         self.saveToVar.set(asksaveasfilename(initialdir = optionGet("ResultDirectory", os.getcwd(),
-                                                                    "str"), defaultextension =
+                                                                    "str", True),
+                                             defaultextension =
                                              optionGet("DefProcessOutputFileType", ".txt",
-                                                       "str")[1:]))
+                                                       "str", True)[1:]))
         if self.parent == "processor":
             if self.root.root.fileStorage.arenafiles and self.saveToVar.get():
                 self.root.process.state(["!disabled"])              
@@ -160,7 +176,7 @@ class SaveToFrame(ttk.Frame):
 
 def returnName(filename, allFiles):
     "depending on option 'SaveFullPath' returns full name of basename"
-    selected = optionGet("SaveFullPath", "Basename", "str")
+    selected = optionGet("SaveFullPath", "Basename", "str", True)
     if selected == "Unique path":
         sharedName = os.path.split(os.path.commonprefix(allFiles))[0]
         return filename[len(sharedName):].lstrip("/\\")

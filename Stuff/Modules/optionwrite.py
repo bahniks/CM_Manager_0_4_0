@@ -17,11 +17,12 @@ You should have received a copy of the GNU General Public License
 along with Carousel Maze Manager.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import os.path
 import os
 
+import mode as m
 
-def optionWrite(option, newValue):
+
+def optionWrite(option, newValue, general = False):
     """writes newValue as an option into file Option.txt located in directory 'Stuff' in working
     directory"""
     if not os.path.exists(os.path.join(os.getcwd(), "Stuff")):
@@ -32,6 +33,8 @@ def optionWrite(option, newValue):
     if not os.path.exists(optionFile):
         open(optionFile, mode = "w").close()
 
+    if not general:
+        option = m.mode + option
     optString = "%|" + option + "|%"
     outfile = open(optionFile, mode = "r")
     tempfile = open(os.path.join(os.getcwd(), "Stuff", "~Options.txt"), mode = "w")

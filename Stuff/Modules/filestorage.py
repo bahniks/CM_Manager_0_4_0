@@ -28,13 +28,12 @@ import os
 from showtracks import ShowTracks
 from optionget import optionGet
 from window import placeWindow
-from cm import CM
 from comment import Comment, commentColor
 from recognizefiles import recognizeFiles
 import mode as m
 
 
-class FileStorage():
+class FileStorage:
     "class for storing files for processing"  
     def __init__(self):
         self.arenafiles = []
@@ -45,6 +44,7 @@ class FileStorage():
         self.addedReflections = {}
         self.comments = defaultdict(str)
         self.lastSave = None
+        self.mode = m.mode
 
     def __iter__(self):
         "abbreviation of 'for file in FileStorage.arenafiles' is now 'for file in FileStorage'"
@@ -494,7 +494,7 @@ class ShowFiles(Toplevel):
 
 class FileStorageFrame(ttk.Frame):
     "frame containing buttons for adding and removing files from FileStorage class"
-    lastOpenedDirectory = None
+    lastOpenedDirectory = {}
     
     def __init__(self, root, parent = ""):
         super().__init__(root)
@@ -601,7 +601,7 @@ class FileStorageFrame(ttk.Frame):
         
         filename = str(askopenfilename(initialdir = optionGet("LogDirectory",
                                                               os.path.join(os.getcwd(), "Stuff",
-                                                                           "Logs"), "str"),
+                                                                           "Logs"), "str", True),
                                        filetypes = [("Text files", "*.txt")]))
         if not filename:
             self.root.root.config(cursor = "")
@@ -719,8 +719,8 @@ class FileStorageFrame(ttk.Frame):
     def getFiles(self):
         """asks to select files and returns list of files that doesn't contain 'arena' or 'room'
         in their names and another list of files containing 'arena' in their name"""
-        if FileStorageFrame.lastOpenedDirectory:
-            initial = FileStorageFrame.lastOpenedDirectory
+        if m.mode in FileStorageFrame.lastOpenedDirectory:
+            initial = FileStorageFrame.lastOpenedDirectory[m.mode]
         else:
             initial = optionGet("FileDirectory", os.getcwd(), "str")
         filenames = str(askopenfilenames(initialdir = initial,
@@ -734,23 +734,24 @@ class FileStorageFrame(ttk.Frame):
             if filenames[-1].endswith(".dat.dat"):
                 filenames[-1] = filenames[-1][:-4]
         if filenames and os.path.isfile(filenames[0]):
-            FileStorageFrame.lastOpenedDirectory = os.path.dirname(filenames[0])            
+            FileStorageFrame.lastOpenedDirectory[m.mode] = os.path.dirname(filenames[0])            
         return recognizeFiles(filenames)
 
 
     def getDirectory(self):
         "recognizes all .dat files in a directory and calls recognizeFiles function"
         cmfiles = []
-        if FileStorageFrame.lastOpenedDirectory:
-            initial = FileStorageFrame.lastOpenedDirectory
+        if m.mode in FileStorageFrame.lastOpenedDirectory:
+            initial = FileStorageFrame.lastOpenedDirectory[m.mode]
         else:
             initial = optionGet("FileDirectory", os.getcwd(), "str")
         selected = askdirectory(initialdir = initial)
-        FileStorageFrame.lastOpenedDirectory = selected
-        for directory in os.walk(selected):
-            for file in directory[2]:
-                if os.path.splitext(file)[1] == ".dat":
-                    cmfiles.append(os.path.join(directory[0], file))
+        if os.path.isdir(selected):
+            FileStorageFrame.lastOpenedDirectory[m.mode] = selected
+            for directory in os.walk(selected):
+                for file in directory[2]:
+                    if os.path.splitext(file)[1] == ".dat":
+                        cmfiles.append(os.path.join(directory[0], file))
         return recognizeFiles(cmfiles)
 
 

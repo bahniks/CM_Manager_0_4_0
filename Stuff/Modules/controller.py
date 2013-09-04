@@ -579,7 +579,7 @@ class Controller(ttk.Frame):
             self.status.set("You have to select a name of a file.")
             return
         
-        separator = optionGet("ResultSeparator", ",", "str")
+        separator = optionGet("ResultSeparator", ",", "str", True)
         results = separator.join(["File"] + self.controlReport.controls)
         for file in self.controlReport.files:
             filename = returnName(filename = file, allFiles = self.controlReport.files)

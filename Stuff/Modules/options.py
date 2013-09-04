@@ -26,9 +26,10 @@ import os
 from optionwrite import optionWrite
 from optionget import optionGet
 from processor import ParameterFrame, OptionFrame
-from cm import Parameters
+from parameters import Parameters
 from commonframes  import TimeFrame
 from window import placeWindow
+import mode as m
     
 
 class RadioFrame(ttk.Labelframe):
@@ -51,11 +52,12 @@ class RadioFrame(ttk.Labelframe):
 
 class ChooseDirectoryFrame(ttk.Labelframe):
     "represents frame for selection of directory"
-    def __init__(self, root, text, optionName, default):
+    def __init__(self, root, text, optionName, default, general):
         super().__init__(root, text = text)
         
         self.root = root
-        self.currentDir = os.path.normpath(optionGet(optionName, default, "str"))
+        self.currentDir = os.path.normpath(optionGet(optionName, default, "str",
+                                                     general = general))
 
         self.directory = StringVar()
         self.directory.set(self.currentDir)
@@ -71,7 +73,7 @@ class ChooseDirectoryFrame(ttk.Labelframe):
     def chooseFun(self):
         "opens dialog for directory selection"
         newDirectory = askdirectory(parent = self.root, initialdir = self.currentDir,
-                                 title = "Choose a directory")
+                                    title = "Choose a directory")
         if newDirectory:
             self.directory.set(os.path.normpath(newDirectory))
 
@@ -86,7 +88,7 @@ class OptionsCM(Toplevel):
     def __init__(self, root):
         super().__init__(root)
         self.root = root
-        self.title("Options")
+        self.title(m.fullname[m.mode] + " options")
         self.grab_set()
         self.focus_set()
         self.resizable(FALSE, FALSE)
@@ -96,9 +98,83 @@ class OptionsCM(Toplevel):
         
         self.parametersF = ParameterFrame(self, "Default parameters")
 
+        # selection of directories
+        self.fileDirectory = ChooseDirectoryFrame(self, "Default directory for file selection",
+                                                  "FileDirectory", r'{}'.format(os.getcwd()),
+                                                  False)
+
+        # default time
+        self.timeLabFrame = ttk.Labelframe(self, text = "Default time")
+        self.timeFrame = TimeFrame(self.timeLabFrame, observe = False, loadtime = False)
+        self.timeFrame.grid(row = 0, column = 0)
+    
+        # buttons
+        self._createButtons()
+
+        # grid of self contents        
+        self.parametersF.grid(row = 0, column = 0, columnspan = 2, sticky = (N, W), padx = 4,
+                              pady = 2)
+        self.buttonFrame.grid(row = 3, column = 0, columnspan = 2, padx = 3, pady = 4,\
+                              sticky = (E, W, N, S))
+        self.timeLabFrame.grid(row = 1, column = 1, padx = 3, pady = 4, sticky = (N, W))
+        self.fileDirectory.grid(row = 1, column = 0, pady = 2, padx = 2, sticky = (E, W))
+        
+                                   
+    def _createButtons(self):
+        # buttons
+        self.buttonFrame = ttk.Frame(self)
+        self.buttonFrame.columnconfigure(1, weight = 1)
+
+        self.okBut = ttk.Button(self.buttonFrame, text = "Ok", command = self.okFun)
+        self.cancelBut = ttk.Button(self.buttonFrame, text = "Cancel", command = self.cancelFun)
+
+        self.okBut.grid(column = 1, row = 0, padx = 3, pady = 2)
+        self.cancelBut.grid(column = 2, row = 0, padx = 3, pady = 2, sticky = (E))
+
+        
+    def saveFun(self):
+        "saves all options"
+        self.parametersF.saveSelectedParametersAsDefault()
+        optionWrite("DefStartTime", self.timeFrame.startTimeVar.get())
+        optionWrite("DefStopTime", self.timeFrame.timeVar.get())
+        directory = self.fileDirectory.get().rstrip("\/")
+        if os.path.exists(directory):
+            optionWrite("FileDirectory", "r'" + directory  + "'", False)
+        else:
+            messagebox.showinfo(message = "Directory " + directory + " does not exist.",
+                                icon = "error", parent = self, title = "Error",
+                                detail = "Choose an existing directory.")
+            return False
+        return True
+
+
+    def okFun(self):
+        "saves options and exits"
+        if self.saveFun():
+            self.destroy()
+
+
+    def cancelFun(self):
+        "destroys the window"
+        self.destroy()     
+
+
+
+class GeneralOptions(OptionsCM, Toplevel):
+    def __init__(self, root):
+        super(OptionsCM, self).__init__(root)
+        self.root = root
+        self.title("General options")
+        self.grab_set()
+        self.focus_set()
+        self.resizable(FALSE, FALSE)
+        placeWindow(self, 824, 844)
+        self["padx"] = 10
+        self["pady"] = 10
+
         # default filetype of processor output
         self.fileTypeVar = StringVar()
-        self.fileTypeVar.set(optionGet("DefProcessOutputFileType", ".txt", "str"))
+        self.fileTypeVar.set(optionGet("DefProcessOutputFileType", ".txt", "str", True))
 
         self.fileTypeFrame = ttk.Labelframe(self, text = "Default output filetype")
 
@@ -110,9 +186,10 @@ class OptionsCM(Toplevel):
         self.txtRadioBut.grid(row = 1, column = 0, padx = 2, pady = 2, sticky = W)
         self.csvRadioBut.grid(row = 0, column = 0, padx = 2, pady = 2, sticky = W)
 
+
         # output separator
         self.separatorVar = StringVar()
-        self.separatorVar.set(optionGet("ResultSeparator", ",", "str"))
+        self.separatorVar.set(optionGet("ResultSeparator", ",", "str", True))
 
         self.separatorFrame = ttk.Labelframe(self, text = "Result separator")
 
@@ -127,106 +204,68 @@ class OptionsCM(Toplevel):
         self.semicolonRadioBut.grid(row = 1, padx = 2, pady = 2, sticky = W)
         self.tabRadioBut.grid(row = 2, padx = 2, pady = 2, sticky = W)
 
+        # selection of directories
+        self.directoriesFrame = ttk.Frame(self)
+        self.directoriesFrame.columnconfigure(0, weight = 1)
+        self.directoryOptions = [
+            ("Default directory for results", "ResultDirectory", os.getcwd(), True),
+            ("Directory for saving of processing logs", "LogDirectory",
+             os.path.join(os.getcwd(), "Stuff", "Logs"), True),
+            ("Directory for images", "ImageDirectory", os.getcwd(), True),
+            ("Directory for saving of selected files", "SelectedFilesDirectory",
+             os.path.join(os.getcwd(), "Stuff", "Selected files"), True)]
+        for count, option in enumerate(self.directoryOptions):
+            exec("""self.{1} = ChooseDirectoryFrame(self.directoriesFrame, '{0}', '{1}', \
+                 r'{2}', {3})""".format(*option))
+            exec("self.{}.grid(row = {}, column = 0, pady = 2, padx = 2, sticky = (E, W))".format(
+                option[1], count))
+
         # save filename as full path
         self.saveFilenameAs = RadioFrame(self, text = "Save (show) filename as:",
                                          optionName = "SaveFullPath", default = "Basename",
                                          options = ["Basename", "Full path", "Unique path"])
 
-        # selection of directories
-        self.directoriesFrame = ttk.Frame(self)
-        self.directoriesFrame.columnconfigure(0, weight = 1)
-        self.directoryOptions = [
-            ("Default directory for file selection", "FileDirectory", os.getcwd()),
-            ("Default directory for results", "ResultDirectory", os.getcwd()),
-            ("Directory for saving of processing logs", "LogDirectory",
-             os.path.join(os.getcwd(), "Stuff", "Logs")),
-            ("Directory for images", "ImageDirectory", os.getcwd()),
-            ("Directory for saving of selected files", "SelectedFilesDirectory",
-             os.path.join(os.getcwd(), "Stuff", "Selected files"))]
-        for count, option in enumerate(self.directoryOptions):
-            exec("""self.{1} = ChooseDirectoryFrame(self.directoriesFrame, '{0}', '{1}', \
-                 r'{2}')""".format(*option))
-            exec("self.{}.grid(row = {}, column = 0, pady = 2, padx = 2, sticky = (E, W))".format(
-                option[1], count))
-
-        # default time
-        self.timeLabFrame = ttk.Labelframe(self, text = "Default time")
-        self.timeFrame = TimeFrame(self.timeLabFrame, observe = False)
-        self.timeFrame.grid(row = 0, column = 0)
-
         # processor options
         self.processorOptions = OptionFrame(self, text = "Default process options")
 
-        # checking messages
-        self.messageCheckingFrame = ttk.Labelframe(self, text = "Messages and new versions")
-        self.messageCheckingVar = BooleanVar()
-        self.messageCheckingVar.set(optionGet("CheckMessages", True, "bool"))
-        self.messageCheckingChB = ttk.Checkbutton(self.messageCheckingFrame,
-                                                  variable = self.messageCheckingVar,
-                                                  onvalue = True, offvalue = False,
-                                                  text = "Check messages and new versions")
-        self.messageCheckingChB.grid(column = 0, row = 0)
-        
-        # buttons
-        self.buttonFrame = ttk.Frame(self)
-        self.buttonFrame.columnconfigure(1, weight = 1)
 
-        self.saveBut = ttk.Button(self.buttonFrame, text = "Save", command = self.saveFun)
-        self.okBut = ttk.Button(self.buttonFrame, text = "Ok", command = self.okFun)
-        self.cancelBut = ttk.Button(self.buttonFrame, text = "Cancel", command = self.cancelFun)
+        self._createButtons()
         self.commentColor = ttk.Button(self, text = "Comment color",
                                        command = self.chooseCommentColor)
 
-        self.saveBut.grid(column = 0, row = 0, padx = 3, pady = 2, sticky = (W))
-        self.okBut.grid(column = 1, row = 0, padx = 3, pady = 2)
-        self.cancelBut.grid(column = 2, row = 0, padx = 3, pady = 2, sticky = (E))
-        self.commentColor.grid(column = 3, row = 3, padx = 2, pady = 2)
-
-        # grid of self contents        
-        self.parametersF.grid(row = 0, column = 0, columnspan = 4, sticky = (N, W), padx = 4,
-                              pady = 2)
-        self.fileTypeFrame.grid(row = 2, column = 0, columnspan = 2, padx = 3, pady = 4,
+        self.commentColor.grid(column = 2, row = 0, padx = 2, pady = 2)
+        self.fileTypeFrame.grid(row = 0, column = 0, padx = 3, pady = 4,
                                 sticky = (W, N, E, S))
-        self.buttonFrame.grid(row = 8, column = 0, columnspan = 4, padx = 3, pady = 4,\
+        self.buttonFrame.grid(row = 3, column = 0, columnspan = 2, padx = 3, pady = 4,\
                               sticky = (E, W, N, S))
-        self.separatorFrame.grid(row = 3, column = 0, columnspan = 2, padx = 3, pady = 4,
+        self.separatorFrame.grid(row = 1, column = 0, padx = 3, pady = 4,
                                  sticky = (W, N, E))
-        self.saveFilenameAs.grid(row = 2, column = 2, padx = 3, pady = 4, sticky = (N, W, E))
-        self.directoriesFrame.grid(row = 5, column = 0, columnspan = 5, padx = 3, pady = 8,
-                                   sticky = (N, W, E))
-        self.timeLabFrame.grid(row = 2, column = 3, padx = 3, pady = 4, sticky = (N, W))
-        self.processorOptions.grid(row = 3, column = 2, pady = 4, padx = 4, sticky = (N, W),
-                                   columnspan = 2, rowspan = 2)
-        self.messageCheckingFrame.grid(row = 4, column = 0, columnspan = 2, sticky = (N, W),
-                                       pady = 3, padx = 3)
-                                   
-        
+        self.saveFilenameAs.grid(row = 0, column = 1, padx = 3, pady = 4, sticky = (N, W, E))
+        self.processorOptions.grid(row = 1, column = 1, pady = 4, padx = 4, sticky = (N, W))
+        self.directoriesFrame.grid(row = 2, column = 0, columnspan = 3, padx = 3, pady = 4)
+
+
     def saveFun(self):
         "saves all options"
-        self.parametersF.saveSelectedParametersAsDefault()
         optionWrite("DefProcessOutputFileType", "'" + self.fileTypeVar.get() + "'")
         optionWrite("SaveFullPath", self.saveFilenameAs.get())
         optionWrite("ResultSeparator", "'" + self.separatorVar.get() + "'")
-        optionWrite("DefStartTime", self.timeFrame.startTimeVar.get())
-        optionWrite("DefStopTime", self.timeFrame.timeVar.get())
         optionWrite("ProcessWhat", "'" + self.processorOptions.processWhat.get() + "'")
         optionWrite("RemoveReflectionsWhere",
                     "'" + self.processorOptions.removeReflectionsWhere.get() + "'")
         optionWrite("DefSaveTags", self.processorOptions.saveTags.get())
         optionWrite("DefSaveComments", self.processorOptions.saveComments.get())
         optionWrite("DefShowResults", self.processorOptions.showResults.get())
-        optionWrite("CheckMessages", bool(self.messageCheckingVar.get()))
         for option in self.directoryOptions:
             directory = eval("self.{}.get()".format(option[1])).rstrip("\/")
             if os.path.exists(directory):
-                optionWrite(option[1], "r'" + directory  + "'")
+                optionWrite(option[1], "r'" + directory  + "'", option[3])
             else:
                 messagebox.showinfo(message = "Directory " + directory + " does not exist.",
                                     icon = "error", parent = self, title = "Error",
                                     detail = "Choose an existing directory.")
                 return False
         return True
-
 
     def chooseCommentColor(self):
         "opens dialog for choosing color of comments and immediately saves the selected color"
@@ -237,17 +276,6 @@ class OptionsCM(Toplevel):
             optionWrite("CommentColor", "'" +  selected + "'")
             self.root.explorer.fileFrame.tree.tag_configure("comment", background = selected)
             self.root.controller.contentTree.tag_configure("comment", background = selected)
-                
-
-    def okFun(self):
-        "saves options and exits"
-        if self.saveFun():
-            self.destroy()
-
-
-    def cancelFun(self):
-        "destroys the window"
-        self.destroy()     
 
 
         
@@ -255,7 +283,7 @@ class AdvancedOptions(Toplevel):
     "advanced options window reachable from menu"
     def __init__(self, root):
         super().__init__(root)
-        self.title("Parameter settings")
+        self.title("Parameter settings (" + m.fullname[m.mode] + ")")
         self.grab_set()
         self.focus_set()
         self.resizable(FALSE, FALSE)   

@@ -30,45 +30,57 @@ from optionget import optionGet
 from window import placeWindow
 from optionwrite import optionWrite
 from commonframes import TimeFrame
+import mode as m
 
 
-def saveFileStorage(root):
+def saveFileStorage(root, mode):
     "saves pickled fileStorage"
     initialdir = optionGet("SelectedFilesDirectory", os.path.join(os.getcwd(), "Stuff",
-                                                                  "Selected files"), "str")
+                                                                  "Selected files"), "str", True)
     file = asksaveasfilename(filetypes = [("Filestorage", "*.files")], initialdir = initialdir)
     if file:
         if os.path.splitext(file)[1] != ".files":
             file = file + ".files"
         with open(file, mode = "wb") as infile:
-            root.selectFunction.fileStorage.lastSave = file
-            pickle.dump(root.selectFunction.fileStorage, infile)
+            m.fs[mode].lastSave = file
+            pickle.dump(m.fs[mode], infile)
 
 
 def loadFileStorage(root):
     "loads pickled fileStorage"
     initialdir = optionGet("SelectedFilesDirectory", os.path.join(os.getcwd(), "Stuff",
-                                                                  "Selected files"), "str")
+                                                                  "Selected files"), "str", True)
     file = askopenfilename(filetypes = [("Filestorage", "*.files")], initialdir = initialdir)
     if file:
         with open(file, mode = "rb") as infile:
             loaded = pickle.load(infile).__dict__
             current = root.selectFunction.fileStorage.__dict__
+            if "mode" not in loaded or m.mode != loaded["mode"]:
+                answ = messagebox.askyesno(message = ("Current mode does not correspond "
+                                                      "with the loaded files.\n"
+                                                      "Do you want to still load the files?"),
+                                           icon = "question", title = "Proceed?")
+                if not answ:
+                    return
             for key in loaded:
                 if key in current:
                     current[key] = loaded[key]
+            current["lastSave"] = file
         root.checkProcessing()
 
 
-def doesFileStorageRequiresSave(root):
+def doesFileStorageRequiresSave(root, mode):
     """checks whether last save of filestorage is the same as current filestorage and whether
         filestorage contains anything for saving"""
-    if not any(root.selectFunction.fileStorage.__dict__.values()):
+    for key, value in m.fs[mode].__dict__.items():
+        if value and key != "mode":
+            break
+    else:
         return False
-    lastSave = root.selectFunction.fileStorage.lastSave
+    lastSave = m.fs[mode].lastSave
     if lastSave:
         with open(lastSave, mode = "rb") as infile:
-            return root.selectFunction.fileStorage.__dict__ != pickle.load(infile).__dict__
+            return m.fs[mode].__dict__ != pickle.load(infile).__dict__
     else:
         return True
     
@@ -86,7 +98,7 @@ class SetBatchTime(Toplevel):
         self.resizable(False, False)
 
         self.batchTime = optionGet("LastBatchTime", "[(0, 20)]", "list")
-        self.developer = optionGet("Developer", False, 'bool')
+        self.developer = optionGet("Developer", False, 'bool', True)
         self.manualChangeEnabled = self.developer
 
         # frames

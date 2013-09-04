@@ -26,7 +26,7 @@ import os
 import os.path
 
 
-from cm import Parameters
+from parameters import Parameters
 from filestorage import FileStorageFrame
 from commonframes import TimeFrame, returnName
 from image import SVG
@@ -321,7 +321,7 @@ class Explorer(ttk.Frame):
 
     def saveOneImage(self, cm, filename):
         "saves image for one file"
-        directory = optionGet("ImageDirectory", os.getcwd(), "str")
+        directory = optionGet("ImageDirectory", os.getcwd(), "str", True)
         # pridat moznost scale u vsech SVG
         
         what =  self.saveWhatVar.get()    
@@ -437,6 +437,10 @@ class Explorer(ttk.Frame):
         self.timeFrame.changeState("disabled")
         self.showTrack["state"] = "disabled"
         self.saveBut.state(["disabled"])
+
+        if self.animate == "stop":
+            self.changedTime(0)
+            
         self.animate = "" # status of the animation - '', 'pause', 'stop'
         
         prevTime = time()
@@ -698,7 +702,7 @@ class Explorer(ttk.Frame):
                 self.cm.removeReflections(points = self.fileStorage.reflections.get(filename,
                                                                                     None))
         except Exception as e:
-            if optionGet("Developer", False, 'bool'):
+            if optionGet("Developer", False, 'bool', True):
                 print(e)
             self.status.set("File failed to load!")
             self.bell()
@@ -1225,17 +1229,3 @@ class FileFrame(ttk.Frame):
             menu.post(event.x_root, event.y_root)
 
 
-
-def main():
-    testGUI = Tk()
-    explorer = Explorer(testGUI)
-    explorer.grid()
-    explorer.selectFileFun()
-    explorer.speed.set(30)
-    explorer.graphTypeVar.set("DistanceFromCenterGraph(self)")
-    explorer.changedGraph()
-    explorer.playFun()
-    testGUI.mainloop()
-    
-
-if __name__ == "__main__": main()

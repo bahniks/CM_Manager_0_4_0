@@ -44,6 +44,11 @@ fullname = {"CM": "Carousel maze",
             "MWM": "Morris watter maze",
             "OF": "Open field"}
 
+time = {"CM": 20,
+        "MWM": 1,
+        "OF": 10}
+
+
 def changeMode(newMode):
     global mode, CL, files, name
     mode = newMode
