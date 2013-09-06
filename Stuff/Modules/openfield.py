@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with Carousel Maze Manager.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from collections import deque
+from collections import deque, OrderedDict
 
 
 from cm import CM
@@ -25,7 +25,9 @@ from singleframe import SF
 
 
 class OF(SF, CM):
-    def __init__(self, nameA, *_, cache = {}, order = deque()):
+    cache = OrderedDict()
+    
+    def __init__(self, nameA, *_):
 
         self.nameA = nameA
         self.data = []
@@ -33,8 +35,8 @@ class OF(SF, CM):
         self.indices = slice(2,4)
        
         # in cache?
-        if self.nameA in cache:
-            self.__dict__ = cache[self.nameA]
+        if self.nameA in OF.cache:
+            self.__dict__ = OF.cache[self.nameA]
             return
 
         # processing data from arena frame
@@ -51,10 +53,9 @@ class OF(SF, CM):
             raise Exception("Failure in data initialization.")
 
         # caching
-        cache[self.nameA] = self.__dict__
-        order.append(self.nameA)
-        if len(order) > 10:
-            del cache[order.popleft()]
+        OF.cache[self.nameA] = self.__dict__
+        if len(OF.cache) > 15:
+            OF.cache.popitem(last = False)
 
 
     def countOutsidePoints(self, time = 20, startTime = 0, distance = 1):
@@ -85,6 +86,10 @@ class OF(SF, CM):
                     self._computeSpeed(reflection, self.data[row + i]) * 30 <
                     self._computeSpeed(before, self.data[row + i]),
                     row + i in self.interpolated))
+
+    def _cacheRemoval(self):
+        if self.nameA in OF.cache:
+            OF.cache.pop(self.nameA) 
 
 
     def removeReflections(self, *args, bothframes = False, **kwargs):

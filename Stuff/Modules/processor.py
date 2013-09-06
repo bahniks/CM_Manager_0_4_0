@@ -20,6 +20,8 @@ along with Carousel Maze Manager.  If not, see <http://www.gnu.org/licenses/>.
 from tkinter import *
 from tkinter import ttk
 from time import time, localtime, strftime
+from operator import methodcaller
+from collections import OrderedDict
 import os.path
 import os
 import csv
@@ -27,12 +29,12 @@ import csv
 
 from commonframes  import TimeFrame, SaveToFrame, returnName
 from filestorage import FileStorageFrame
-from parameters import Parameters
 from optionget import optionGet
 from optionwrite import optionWrite
 from version import version
 from window import placeWindow
 from tools import SetBatchTime
+import mode as m
 
 
 class Processor(ttk.Frame):
@@ -43,7 +45,7 @@ class Processor(ttk.Frame):
         self["padding"] = (10, 10, 12, 12)
         self.root = root
         self.fileStorage = self.root.fileStorage
-        self.selectedBatchTime = optionGet("LastBatchTime", "[(0, 20)]", "list")
+        self.selectedBatchTime = optionGet("LastBatchTime", [(0, 20)], "list") # zkontrolovat ""
 
         # variables    
         self.status = StringVar()
@@ -148,27 +150,43 @@ class Processor(ttk.Frame):
             self.stoppedProcessing = False
             self.progressWindow = ProgressWindow(self, len(self.filesToProcess))     
 
-        # selected methods          
-        methods = []
-        for method in Parameters().parameters:
-            if eval("self.parametersF.%sVar.get()" % (method[0].replace(" ", ""))):
-                methods.append(method[0])
-
         # initializations
         output = self.saveToFrame.saveToVar.get()
+        if not os.path.splitext(output)[1]:
+            output = output + optionGet("DefProcessOutputFileType", ".txt", "str", True)
+        if not os.path.dirname(output):
+            output = os.path.join(optionGet("ResultDirectory", os.getcwd(), "str", True), output)
         startTime = float(self.timeFrame.startTimeVar.get())
         time = float(self.timeFrame.timeVar.get())
         separator = optionGet("ResultSeparator", ",", "str", True)
         batchTime = self.selectedBatchTime if self.useBatchTimeVar.get() else None
-        self.log = Log(methods, startTime, time, self.filesToProcess, self.fileStorage,
-                       self.optionFrame.removeReflectionsWhere.get(), output,
-                       batchTime = batchTime)
         self.someProblem = False
         developer = optionGet("Developer", False, 'bool', True)
 
+        # selected methods          
+        methods = OrderedDict()
+        parameters = m.parameters
+        for name, par in parameters.items():
+            if eval("self.parametersF.%sVar.get()" % (name.replace(" ", ""))):
+                options = {name: optionGet(*option[0]) for name, option in par.options.items()}
+                if not self.useBatchTimeVar.get():
+                    methods[name] = [methodcaller(par.method, startTime = startTime,
+                                                  time = time, **options)]
+                elif par.group != "info":
+                    methods[name] = [methodcaller(par.method, startTime = times[0],
+                                                  time = times[1], **options)
+                                     for times in batchTime]
+                else:
+                    methods[name] = [methodcaller(par.method, **options)]
+
+        # log
+        self.log = Log(methods, startTime, time, self.filesToProcess, self.fileStorage,
+                       self.optionFrame.removeReflectionsWhere.get(), output,
+                       batchTime = batchTime)
+                    
         # results header
         if self.useBatchTimeVar.get():
-            info = [method[0] for method in Parameters().parameters if method[2] == "info"]
+            info = {method for method, attr in parameters.items() if attr.group == "info"}
             results = ["File"]
             for method in methods:
                 if method in info:
@@ -178,9 +196,9 @@ class Processor(ttk.Frame):
                                     start, end in self.selectedBatchTime])
             results = separator.join(results)
         else:
-            results = separator.join(["File"] + methods)        
+            results = separator.join(["File"] + [method for method in methods])
         if self.optionFrame.saveTags.get():
-            results += separator + "Tags"
+            results += separator + "Tag"
         if self.optionFrame.saveComments.get():
             results += separator + "Comment"
         
@@ -190,9 +208,9 @@ class Processor(ttk.Frame):
             if methods:
                 try:
                     if file in self.fileStorage.pairedfiles:
-                        cm = CM(file, nameR = self.fileStorage.pairedfiles[file])
+                        cm = m.CL(file, self.fileStorage.pairedfiles[file])
                     else:
-                        cm = CM(file, nameR = "auto")
+                        cm = m.CL(file, "auto")
 
                     if self.optionFrame.removeReflections(file):
                         cm.removeReflections(points = self.fileStorage.reflections.get(file,
@@ -208,33 +226,19 @@ class Processor(ttk.Frame):
                     continue
                                 
             result = []
-            for method in Parameters().parameters:
-                if method[0] in methods:
-                    if self.useBatchTimeVar.get():
-                        for startTime, time in self.selectedBatchTime:
-                            try:
-                                if method[2] == "custom":
-                                    exec("from Stuff.Parameters import {}".format(method[5]))
-                                result.append(eval(method[1]))
-                                if method[2] == "info":
-                                    break
-                            except Exception as e:
-                                if developer:
-                                    print(e)   
-                                result.append("NA")
-                                self.log.methodProblems[method[0]].append(file)
-                                self.someProblem = True
-                    else:                          
-                        try:
-                            if method[2] == "custom":
-                                exec("from Stuff.Parameters import {}".format(method[5]))
-                            result.append(eval(method[1]))
-                        except Exception as e:
-                            if developer:
-                                print(e)   
-                            result.append("NA")
-                            self.log.methodProblems[method[0]].append(file)
-                            self.someProblem = True
+
+            for name, funcs in methods.items():
+                for func in funcs:                        
+                    try:
+                        #if method[2] == "custom":
+                            #exec("from Stuff.Parameters import {}".format(method[5]))               
+                        result.append(func(cm))
+                    except Exception as e:
+                        if developer:
+                            print(e)   
+                        result.append("NA")
+                        self.log.methodProblems[name].append(file)
+                        self.someProblem = True
 
             result = separator.join(map(str, result))
             if methods:
@@ -346,6 +350,7 @@ class Log():
             
         with open(self.filename, mode = "w") as logfile:
             logfile.write("CM Manager version " + ".".join(version()) + "\n\n")
+            logfile.write("Task: " + m.fullname[m.mode] + "\n\n")
             logfile.write("Date: " + strftime("%d %b %Y", writeTime) + "\n")
             logfile.write("Time: " + strftime("%H:%M:%S", writeTime) + "\n\n\n")
             self._writeProblems(logfile)
@@ -382,9 +387,9 @@ class Log():
         if self.methods:
             for method in self.methods:
                 logfile.write("\n\t" + method)
-                if method in Parameters().options:
-                    for option in Parameters().options[method]:
-                        logfile.write("\n\t\t" + option[0] + ": " + str(option[1]))
+                if m.parameters[method].options:
+                    for option in m.parameters[method].options.values():
+                        logfile.write("\n\t\t" + option[1] + ": " + str(optionGet(*option[0])))
         else:
             logfile.write("\n\tNone")
         logfile.write("\n\n\n")
@@ -536,7 +541,7 @@ def writeResults(file, results):
     if not os.path.splitext(file)[1]:
         file = file + optionGet("DefProcessOutputFileType", ".txt", "str", True)
     if not os.path.dirname(file):
-        file = os.path.join(optionGet("ResultDirectory", os.getcwd(), "str"), file, True)
+        file = os.path.join(optionGet("ResultDirectory", os.getcwd(), "str", True), file)
     if os.path.splitext(file)[1] == ".csv":
         results = [[item for item in line.split(",")] for line in results.split("\n")]
         with open(file, mode = "w", newline = "") as f:
@@ -574,32 +579,32 @@ class ParameterFrame(ttk.Labelframe):
         infoNum = 0
         experimentalNum = 0
         customNum = 0
-        for parameter in Parameters().parameters:
-            if parameter[2] == "basic":
+        for name, parameter in m.parameters.items():
+            if parameter.group == "basic":
                  rowNum = basicNum
                  basicNum += 1
-            elif parameter[2] == "advanced":
+            elif parameter.group == "advanced":
                  rowNum = advancedNum
                  advancedNum += 1
-            elif parameter[2] == "double":
+            elif parameter.group == "double":
                  rowNum = doubleNum
                  doubleNum += 1
-            elif parameter[2] == "info":
+            elif parameter.group == "info":
                  rowNum = infoNum
                  infoNum += 1
-            elif parameter[2] == "experimental":
+            elif parameter.group == "experimental":
                  rowNum = experimentalNum
                  experimentalNum += 1                       
-            elif parameter[2] == "custom":
+            elif parameter.group == "custom":
                  rowNum = customNum
-                 customNum += 1                 
-            exec("self.%s = BooleanVar()" % (parameter[0].replace(" ", "") + "Var"))
-            exec("self.%sVar.set(%s)" % (parameter[0].replace(" ", ""), parameter[3]))
+                 customNum += 1
+            label = name.replace(" ", "")
+            exec("self.%s = BooleanVar()" % (label + "Var"))
+            exec("self.%sVar.set(%s)" % (label, optionGet("Def" + label, False, 'bool')))
             exec("""self.%sBut = ttk.Checkbutton(%s, text = '%s', variable = self.%sVar,
-                 onvalue = True)""" % (parameter[0].replace(" ", ""), parameter[2], parameter[0],\
-                  parameter[0].replace(" ", "")))
+                 onvalue = True)""" % (label, parameter.group, name, label))
             exec("self.%sBut.grid(column = 0, row = %i, sticky = (S, W), padx = 1, pady = 2)" %\
-                 (parameter[0].replace(" ", ""), rowNum))
+                 (label, rowNum))
 
         self.bind("<Button-3>", lambda e: self.popUp(e, "all"))
         basic.bind("<Button-3>", lambda e: self.popUp(e, "basic"))
@@ -623,20 +628,20 @@ class ParameterFrame(ttk.Labelframe):
 
     def _selectAll(self, category):
         "selects all parameters in a category"
-        for parameter in Parameters().parameters:
-            if parameter[2] == category or category == "all":
-                exec("self.%sVar.set(True)" % (parameter[0].replace(" ", "")))
+        for name, parameter in m.parameters.items():
+            if parameter.group == category or category == "all":
+                exec("self.%sVar.set(True)" % (name.replace(" ", "")))
 
     def _unselectAll(self, category):
         "unselects all parameters in a category"
-        for parameter in Parameters().parameters:
-            if parameter[2] == category or category == "all":
-                exec("self.%sVar.set(False)" % (parameter[0].replace(" ", "")))
+        for name, parameter in m.parameters.items():
+            if parameter.group == category or category == "all":
+                exec("self.%sVar.set(False)" % (name.replace(" ", "")))
 
     def saveSelectedParametersAsDefault(self):
-       for parameter in Parameters().parameters:
-            optionWrite(parameter[4], bool(eval(("self." + parameter[0].replace(" ", "") +
-                                                 "Var.get()"))))        
+       for name, parameter in m.parameters.items():
+           label = name.replace(" ", "")
+           optionWrite("Def" + label, bool(eval(("self." + label + "Var.get()"))))        
 
 
 class OptionFrame(ttk.Labelframe):

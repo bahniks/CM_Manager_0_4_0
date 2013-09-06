@@ -26,7 +26,6 @@ import os
 import os.path
 
 
-from parameters import Parameters
 from filestorage import FileStorageFrame
 from commonframes import TimeFrame, returnName
 from image import SVG
@@ -551,7 +550,7 @@ class Explorer(ttk.Frame):
             time /= 60000
             startTime = self.minTime / 60000
             try:
-                self.selectedPVar.set(eval("self." + self.selectedParameter.get()))
+                self.selectedPVar.set(self.computeSelected(self.cm, startTime, time))
             except Exception:
                 self.selectedPVar.set("-")
 
@@ -636,7 +635,9 @@ class Explorer(ttk.Frame):
     def initializeFile(self, filename, new = True, timeReset = True):
         "initializes canvases, graph, etc."
         if new:
-            self._loadData(filename)
+            successful = self._loadData(filename)
+            if not successful:
+                return
 
         r = self.cm.radius
         self.r = r
@@ -706,7 +707,9 @@ class Explorer(ttk.Frame):
                 print(e)
             self.status.set("File failed to load!")
             self.bell()
-            return
+            return False
+        else:
+            return True
 
 
     def _createShockSector(self):
@@ -728,7 +731,6 @@ class Explorer(ttk.Frame):
             self.roomCanv.create_oval(x - r, y - r, x + r, y + r, outline = "red",
                                       width = 2, tags = "platformRF")              
             
-
 
     def _drawTrack(self):
         r = self.r
@@ -768,6 +770,7 @@ class Explorer(ttk.Frame):
                     self.minTime <= line[1] <= self.maxTime]
             self.roomCanv.create_line(([item + 150 - r for line in data[::5] for item in line]),
                                       fill = "black", width = 2)
+
 
     def _initializeAnimation(self):
         r = self.r
@@ -819,7 +822,7 @@ class Explorer(ttk.Frame):
         if self.selectedParameter.get():
             time = self.maxTime / 60000
             startTime = self.minTime / 60000
-            self.totSelectedPVar.set(eval("self." + self.selectedParameter.get()))
+            self.totSelectedPVar.set(self.computeSelected(self.cm, startTime, time))
         else:
             self.totSelectedPVar.set("-")
 
@@ -900,10 +903,10 @@ class Explorer(ttk.Frame):
                              variable = self.selectedParameter, value = "nothing",
                              command = self._changedSelectedParameter)
         menu.add_separator()
-        for parameter in sorted(Parameters().parameters, key = lambda x: x[0]):
-            if parameter[2] not in ["info", "custom"] and parameter[0] not in notAvailable:
-                menu.add_radiobutton(label = 'Show {}'.format(parameter[0].lower()),
-                                     variable = self.selectedParameter, value = parameter[1],
+        for name, par in m.parameters.items():
+            if par.group not in ["info", "custom"] and name not in notAvailable:
+                menu.add_radiobutton(label = 'Show {}'.format(name.lower()),
+                                     variable = self.selectedParameter, value = name,
                                      command = self._changedSelectedParameter)
         menu.post(event.x_root, event.y_root)
 
@@ -916,31 +919,39 @@ class Explorer(ttk.Frame):
             self.selectedPVar.set("-")
             self.note.unbind_widget(self.selectedPLab)           
         else:
-            selectedParameter = self.selectedParameter.get()
-            for parameter in Parameters().parameters:
-                if parameter[1] == selectedParameter:
-                    name = parameter[0]
-                    if len(name) > 13:
-                        mapping = {"Maximum": "Max.",
-                                   "Mean": "M",
-                                   "Time": "t.",
-                                   "time": "t.",
-                                   "Circular": "Circ.",
-                                   "variance": "var."
-                                   }
-                        for key, value in mapping.items():
-                            name = name.replace(key, value)
-                        if len(name) > 13:
-                            name = name[:10] + "..."
-                    self.selectedPLab["text"] = name
+            selected = self.selectedParameter.get()
+            name = selected
+            if len(name) > 13:
+                mapping = {"Maximum": "Max.",
+                           "Mean": "M",
+                           "Time": "t.",
+                           "time": "t.",
+                           "Circular": "Circ.",
+                           "variance": "var."
+                           }
+                for key, value in mapping.items():
+                    name = name.replace(key, value)
+                if len(name) > 13:
+                    name = name[:10] + "..."
+            self.selectedPLab["text"] = name
+            
+            def createSelectedFun(method, **options):
+                def selectedFun(obj, start, stop):
+                    return getattr(obj, method)(startTime = start, time = stop, **options)
+                return selectedFun
+
+            par = m.parameters[selected]
+            options = {name: optionGet(*option[0]) for name, option in par.options.items()}
+            self.computeSelected = createSelectedFun(par.method, **options)
+            
             if self.initialized:
                 time = self.maxTime / 60000
                 startTime = self.minTime / 60000
-                self.totSelectedPVar.set(eval("self." + selectedParameter))
+                self.totSelectedPVar.set(self.computeSelected(self.cm, startTime, time))
                 nowTime = (self.curTime.get() / 100) * (self.maxTime - self.minTime) + self.minTime
                 time = nowTime / 60000
                 try:
-                    self.selectedPVar.set(eval("self." + selectedParameter))
+                    self.selectedPVar.set(self.computeSelected(self.cm, startTime, time))
                 except Exception:
                     self.selectedPVar.set("-")
         

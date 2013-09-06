@@ -23,6 +23,7 @@ from collections import namedtuple
 from cm import CM
 from mwm import MWM
 from openfield import OF
+from parameters import ParametersCM, ParametersMWM, ParametersOF
 
 
 mode = None
@@ -31,14 +32,15 @@ files = None
 fs = {}
 slaves = {}
 name = ""
+parameters = None
 
 
-Task = namedtuple("Task", ["constructor", "files"])
+Task = namedtuple("Task", ["constructor", "files", "parameters"])
 Slaves = namedtuple("Slaves", ["processor", "explorer", "controller"])
 
-dispatch = {"CM": Task(CM, "pair"),
-            "MWM": Task(MWM, "one"),
-            "OF": Task(OF, "one")}
+dispatch = {"CM": Task(CM, "pair", ParametersCM()),
+            "MWM": Task(MWM, "one", ParametersMWM()),
+            "OF": Task(OF, "one", ParametersOF())}
 
 fullname = {"CM": "Carousel maze",
             "MWM": "Morris watter maze",
@@ -50,8 +52,12 @@ time = {"CM": 20,
 
 
 def changeMode(newMode):
-    global mode, CL, files, name
+    global mode, CL, files, name, parameters
     mode = newMode
     CL = dispatch[mode].constructor
     files = dispatch[mode].files
     name = fullname[mode]
+    parameters = dispatch[mode].parameters
+
+
+    

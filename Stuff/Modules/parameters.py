@@ -17,150 +17,91 @@ You should have received a copy of the GNU General Public License
 along with Carousel Maze Manager.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+
+from collections import OrderedDict, namedtuple
 import os
 
-from optionget import optionGet
 
 
-class Parameters(list):
+Par = namedtuple("Par", ["method", "group", "options"])
+Opt = namedtuple("Opt", ["name", "default", "types"])
+
+
+class ParametersCM(OrderedDict):
     "class containing list of parameters, their methods and options"
     def __init__(self):
-        #zmenit na ordereddict pomoce inheritance
-        self.parameters = [["Total distance", """cm.getDistance(time = time, startTime = startTime,
-                            skip = optionGet('StrideParTotalDistance', 25, 'int'), minDifference =
-                            optionGet('MinDiffParTotalDistance', 0, ['int', 'float']))""",
-                            "basic", optionGet("DefParDistance", True, "bool"), "DefParDistance"],
-                      ["Maximum time avoided", "cm.getMaxT(time = time, startTime = startTime)",
-                       "basic", optionGet("DefParMaxT", True, "bool"), "DefParMaxT"],
-                      ["Entrances", "cm.getEntrances(time = time, startTime = startTime)", "basic",
-                       optionGet("DefParEntrances", False, "bool"), "DefParEntrances"],
-                      ["Time to first", "cm.getT1(time = time, startTime = startTime)", "basic",
-                       optionGet("DefParT1", False, "bool"), "DefParT1"],
-                      ["Shocks", "cm.getShocks(time = time, startTime = startTime)", "basic",
-                       optionGet("DefParShocks", False, "bool"), "DefParShocks"],
-                      ["Time in target sector", """cm.getTimeInTarget(time = time, startTime =
-                        startTime)""", "basic", optionGet("DefParTimeInTarget", False, "bool"),
-                       "DefParTimeInTarget"],
-                      ["Time in opposite sector", """cm.getTimeInOpposite(time = time, startTime =
-                        startTime)""", "basic", optionGet("DefParTimeInOpposite", False, "bool"),
-                       "DefParTimeInOpposite"],
-                      ["Time in chosen sector", """cm.getTimeInChosenSector(time = time,
-                        startTime = startTime, width = optionGet('WidthParTimeInChosen', 'default',
-                        ['int', 'float']), center = optionGet('AngleParTimeInChosen', 0, ['int',
-                        'float']))""", "advanced", optionGet("DefParTimeInChosen", False, "bool"),
-                       "DefParTimeInChosen"],
-                      ["Time in sectors", """cm.getAngleBoxes(time = time, startTime = startTime,
-                        results = 'condensed', boxWidth = optionGet('WidthParTimeInSectors',
-                        'default', ['int', 'float']))""", "advanced",
-                       optionGet("DefParSectors", False, "bool"), "DefParSectors"],
-                      ["Thigmotaxis", """cm.getThigmotaxis(time = time, startTime = startTime,
-                        percentSize = optionGet("ThigmotaxisPercentSize", 20,
-                        ["int", "float"]))""", "advanced",
-                       optionGet("DefParThigmotaxis", False, "bool"), "DefParThigmotaxis"],
-                        ["Directional mean", """cm.getDirectionalMean(time = time, startTime =
-                        startTime)""", "advanced", optionGet("DefParDirectionalMean", False,
-                                                             "bool"), "DefParDirectionalMean"],
-                        ["Circular variance", """cm.getCircularVariance(time = time, startTime =
-                        startTime)""", "advanced", optionGet("DefParCircularVariance", False,
-                                                             "bool"), "DefParCircularVariance"],
-                        ["Maximum time of immobility", """cm.getMaxTimeOfImmobility(time = time,
-                        startTime = startTime, minSpeed = optionGet('MinSpeedMaxTimeImmobility',
-                        10, ['int', 'float']), skip = optionGet('SkipMaxTimeImmobility', 12,
-                        ['int']), smooth = optionGet('SmoothMaxTimeImmobility', 2,
-                        ['int']))""", "experimental",
-                         optionGet("DefParMaxTimeImmobility", False, "bool"),
-                         "DefParMaxTimeImmobility"],
-                        ["Periodicity", """cm.getPeriodicity(time = time, startTime = startTime,
-                         minSpeed = optionGet('MinSpeedPeriodicity', 10, ['int', 'float']),
-                         skip = optionGet('SkipPeriodicity', 12, ['int']),
-                         smooth = optionGet('SmoothPeriodicity', 2, ['int']),
-                         minTime = optionGet('MinTimePeriodicity', 9, ['int', 'float',
-                         'list']))""", "experimental",
-                         optionGet("DefParPeriodicity", False, "bool"), "DefParPeriodicity"],
-                        ["Proportion of time moving", """cm.getPercentOfMobility(time = time,
-                        startTime = startTime, minSpeed = optionGet('MinSpeedPercentMobility',
-                        5, ['int', 'float']), skip = optionGet('SkipPercentMobility', 12,
-                        ['int']), smooth = optionGet('SmoothPercentMobility', 2,
-                        ['int']))""", "experimental",
-                         optionGet("DefParPercentMobility", False, "bool"),
-                         "DefParPercentMobility"],
-                        ["Mean distance from center", """cm.getMeanDistanceFromCenter(time = time,
-                        startTime = startTime)""", "advanced",
-                         optionGet("DefParMeanDistanceFromCenter", False, "bool"),
-                         "DefParMeanDistanceFromCenter"],
-                        ["Median speed after shock", """cm.getSpeedAfterShock(time = time, 
-                        startTime = startTime, after = optionGet('SkipSpeedAfterShock', 25,
-                        ['int']), absolute = optionGet('AbsoluteSpeedAfterShock', False,
-                        'bool'))""", "experimental", optionGet("DefParSpeedAfterShock", False,
-                                                               "bool"), "DefParSpeedAfterShock"],                           
-                        ["Angle of target sector", "cm.centerAngle", "info",
-                         optionGet("DefParCenterAngle", False, "bool"), "DefParCenterAngle"],    
-                        ["Width of target sector", "cm.width", "info",
-                         optionGet("DefParSectorWidth", False, "bool"), "DefParSectorWidth"],
-                        ["Real minimum time", "cm.realMinimumTime()", "info",
-                         optionGet("DefParRealMinTime", False, "bool"), "DefParRealMinTime"],
-                        ["Real maximum time", "cm.realMaximumTime()", "info",
-                         optionGet("DefParRealMaxTime", False, "bool"), "DefParRealMaxTime"],
-                        ["Room frame filename", "cm.nameR", "info",
-                         optionGet("DefParRoomFrameFilename", False, "bool"),
-                         "DefParRoomFrameFilename"]
-                      ]
-        
-        self.options = {"Total distance": (("Computed from every [skip in rows]",
-                                            optionGet('StrideParTotalDistance', 25, 'int')),
-                                           ("Minimal distance counted [in pixels]",
-                                            optionGet('MinDiffParTotalDistance', 0,
-                                                      ['int', 'float']))),
-                        "Thigmotaxis": [
-                            ("Annulus width [percent of radius]", optionGet(
-                                "ThigmotaxisPercentSize", 20, ["int", "float"]))
-                            ],
-                        "Time in chosen sector": (
-                            ("Center of sector relative to the target [in degrees]",
-                             optionGet('AngleParTimeInChosen', 0, ['int', 'float'])),
-                            ("Width of sector ('default' if same as target; otherwise in degrees)",
-                             optionGet('WidthParTimeInChosen', 'default', ['int', 'float']))
-                            ),
-                        "Time in sectors": [
-                            ("Width of sector ('default' if same as target; otherwise in degrees)",
-                             optionGet('WidthParTimeInSectors', 'default', ['int', 'float']))
-                            ],
-                        "Maximum time of immobility": (
-                            ("Minimum speed counted [in cm/s]", optionGet(
-                                'MinSpeedMaxTimeImmobility', 10, ['int', 'float'])),
-                            ("Computed from every [skip in rows]", optionGet(
-                                'SkipMaxTimeImmobility', 12, ['int'])),
-                            ("Averaged across [intervals]", optionGet(
-                                'SmoothMaxTimeImmobility', 2, ['int']))),
-                        "Periodicity": (
-                            ("Minimum speed counted [in cm/s]", optionGet(
-                                'MinSpeedPeriodicity', 10, ['int', 'float'])),
-                            ("Computed from every [skip in rows]", optionGet(
-                                'SkipPeriodicity', 12, ['int'])),
-                            ("Averaged across [intervals]", optionGet(
-                                'SmoothPeriodicity', 2, ['int'])),
-                            ("Minimum time of interval [in seconds]", optionGet(
-                                'MinTimePeriodicity', 9, ['int', 'float', 'list']))
-                            ),
-                        "Proportion of time moving": (
-                            ("Minimum speed counted [in cm/s]", optionGet(
-                                'MinSpeedPercentMobility', 5, ['int', 'float'])),
-                            ("Computed from every [skip in rows]", optionGet(
-                                'SkipPercentMobility', 12, ['int'])),
-                            ("Averaged across [intervals]", optionGet(
-                                'SmoothPercentMobility', 2, ['int']))
-                            ),
-                        "Median speed after shock": (
-                            ("Computed from every [skip in rows]", optionGet(
-                                'SkipSpeedAfterShock', 25, ['int'])),
-                            ("Computed from absolute values", optionGet(
-                                'AbsoluteSpeedAfterShock', False, ['bool']))
-                            )                                                  
-                        }
+        super().__init__()
+        self["Total distance"] = Par("getDistance", "basic", {
+            "skip": (Opt('StrideParTotalDistance', 25, 'int'),
+                     "Computed from every [skip in rows]"),
+            "minDifference": (Opt('MinDiffParTotalDistance', 0, ['int', 'float']),
+                              "Minimal distance counted [in pixels]")
+            })
+        self["Maximum time avoided"] = Par("getMaxT", "basic", {})
+        self["Entrances"] = Par("getEntrances", "basic", {})
+        self["Time to first"] = Par("getT1", "basic", {})
+        self["Shocks"] = Par("getShocks", "basic", {})
+        self["Time in target sector"] = Par("getTimeInTarget", "basic", {})
+        self["Time in opposite sector"] = Par("getTimeInOpposite", "basic", {})
+        self["Time in chosen sector"] = Par("getTimeInChosenSector", "advanced", {
+            "width": (Opt('WidthParTimeInChosen', 'default', ['int', 'float']),
+                      "Width of sector ('default' if same as target; otherwise in degrees)"),
+            "center": (Opt('AngleParTimeInChosen', 0, ['int', 'float']),
+                       "Center of sector relative to the target [in degrees]")
+            })
+        self["Time in sectors"] = Par("getAngleBoxes", "advanced", {
+            "boxWidth": (Opt('WidthParTimeInSectors', 'default', ['int', 'float']),
+                         "Width of sector ('default' if same as target; otherwise in degrees)")
+            })
+        self["Thigmotaxis"] = Par("getThigmotaxis", "advanced", {
+            "percentSize": (Opt('ThigmotaxisPercentSize', 20, ['int', 'float']),
+                            "Annulus width [percent of radius]")
+            })
+        self["Directional mean"] = Par("getDirectionalMean", "advanced", {})
+        self["Circular variance"] = Par("getCircularVariance", "advanced", {})                
+        self["Maximum time of immobility"] = Par("getMaxTimeOfImmobility", "experimental", {
+            "minSpeed": (Opt('MinSpeedMaxTimeImmobility', 10, ['int', 'float']),
+                         "Minimum speed counted [in cm/s]"),
+            "skip": (Opt('SkipMaxTimeImmobility', 12, ['int']),
+                     "Computed from every [skip in rows]"),
+            "smooth": (Opt('SmoothMaxTimeImmobility', 2, ['int']),
+                       "Averaged across [intervals]")
+            })                
+        self["Periodicity"] = Par("getPeriodicity", "experimental", {
+            "minSpeed": (Opt('MinSpeedPeriodicity', 10, ['int', 'float']),
+                         "Minimum speed counted [in cm/s]"),
+            "skip": (Opt('SkipPeriodicity', 12, ['int']),
+                     "Computed from every [skip in rows]"),
+            "smooth": (Opt('SmoothPeriodicity', 2, ['int']),
+                       "Averaged across [intervals]"),
+            "minTime": (Opt('MinTimePeriodicity', 9, ['int', 'float', 'list']),
+                        "Minimum time of interval [in seconds]")
+            })   
+        self["Proportion of time moving"] = Par("getPercentOfMobility", "experimental", {
+            "minSpeed": (Opt('MinSpeedPercentMobility', 5, ['int', 'float']),
+                         "Minimum speed counted [in cm/s]"),
+            "skip": (Opt('SkipPercentMobility', 12, ['int']),
+                     "Computed from every [skip in rows]"),
+            "smooth": (Opt('SmoothPercentMobility', 2, ['int']),
+                       "Averaged across [intervals]")
+            })    
+        self["Mean distance from center"] = Par("getMeanDistanceFromCenter", "advanced", {}) 
+        self["Median speed after shock"] = Par("getSpeedAfterShock", "experimental", {
+            "after": (Opt('SkipSpeedAfterShock', 25, ['int']),
+                      "Computed from every [skip in rows]"),
+            "absolute": (Opt('AbsoluteSpeedAfterShock', False, 'bool'),
+                         "Computed from absolute values")
+            })    
+        self["Angle of target sector"] = Par("getCenterAngle", "info", {})
+        self["Width of target sector"] = Par("getWidth", "info", {})
+        self["Real minimum time"] = Par("realMinimumTime", "info", {})
+        self["Real maximum time"] = Par("realMaximumTime", "info", {})
+        self["Room frame filename"] = Par("getRoomName", "info", {})
 
-        self.findParameters()
-        
 
+        #self.findParameters()
+        
+    '''
     def findParameters(self):
         "finds custom written parameters"
         for file in os.listdir(os.path.join(os.getcwd(), "Stuff", "Parameters")):
@@ -174,4 +115,17 @@ class Parameters(list):
                                 "{}.parameter(cm, time = time, startTime = startTime)".format(
                                     splitted[0]), "custom", optionGet(option, False, "bool"),
                                 option, splitted[0]]
-                self.parameters.append(newParameter)  
+                self.parameters.append(newParameter)
+    ''' # TODO
+
+
+class ParametersMWM(ParametersCM):
+    pass
+
+
+class ParametersOF(ParametersCM):
+    pass
+
+
+
+

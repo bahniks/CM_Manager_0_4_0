@@ -105,7 +105,7 @@ class MenuCM(Menu):
         GeneralOptions(self.root)
 
     def saveLoadedFiles(self):
-        saveFileStorage(self.root)
+        saveFileStorage(self.root, m.mode)
         
     def loadSavedFiles(self):
         loadFileStorage(self.root)

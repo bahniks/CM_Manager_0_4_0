@@ -18,7 +18,7 @@ along with Carousel Maze Manager.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from math import degrees, atan2, sin, cos, pi, radians, sqrt
-from collections import deque
+from collections import deque, OrderedDict
 import os
 
 
@@ -42,10 +42,10 @@ class CM:
         - current level is in miliamperes
         - time stamp is in miliseconds
     """
+    cache = OrderedDict()
     
-    def __init__(self, nameA, nameR = "auto", cache = {}, order = deque()):
+    def __init__(self, nameA, nameR = "auto"):
         "class CM represents data from carousel maze"
-
         self.nameA = nameA
         self.data = []
         self.interpolated = set()
@@ -55,8 +55,8 @@ class CM:
         self._setRoomName(nameR)
         
         # in cache?
-        if (self.nameA, self.nameR) in cache:
-            self.__dict__ = cache[(self.nameA, self.nameR)]
+        if (self.nameA, self.nameR) in CM.cache:
+            self.__dict__ = CM.cache[(self.nameA, self.nameR)]
             return
      
         # processing data from room frame    
@@ -76,11 +76,9 @@ class CM:
             raise Exception("Failure in data initialization.")
 
         # caching
-        cache[(self.nameA, self.nameR)] = self.__dict__
-        order.append((self.nameA, self.nameR))
-        if len(order) > 10:
-            del cache[order.popleft()]
-
+        CM.cache[(self.nameA, self.nameR)] = self.__dict__
+        if len(CM.cache) > 10:
+            CM.cache.popitem(last = False)
 
         
     def _setRoomName(self, name):
@@ -283,7 +281,7 @@ class CM:
                         self.data[i][0] -= beginMiss
                     self.interpolated = {p - beginMiss for p in self.interpolated}
                 break
-
+           
 
     @property
     def centerAngle(self):
@@ -833,11 +831,14 @@ class CM:
                     self.data[row + i][7:9] == self.data[row][7:9],
                     self._computeSpeed(reflection, self.data[row + i]) * 30 <
                     self._computeSpeed(before, self.data[row + i]),
-                    row + i in self.interpolated))        
-        
+                    row + i in self.interpolated))
+
+    def _cacheRemoval(self):
+        if (self.nameA, self.nameR) in CM.cache:
+            CM.cache.pop((self.nameA, self.nameR))        
 
     def removeReflections(self, points = None, deleteSame = True, bothframes = True):
-        "removes reflections - hopefully"       
+        "removes reflections - hopefully"
         # finding reflection points
         if points == None:
             points = self.findReflections(time = "max", startTime = 0, results = "indices")
@@ -850,6 +851,9 @@ class CM:
             missing |= self._returnSame(missing)
                  
         missing = sorted(missing)
+
+        if missing:
+            self._cacheRemoval()
 
         # 'removal' itself
         while missing:           
@@ -945,12 +949,20 @@ class CM:
         return outside
 
 
-    def realMinimumTime(self):
+    def realMinimumTime(self, **_):
         return self.data[0][1]
 
-
-    def realMaximumTime(self):
+    def realMaximumTime(self, **_):
         return self.data[-1][1]
+
+    def getCenterAngle(self, **_):
+        return self.centerAngle
+
+    def getWidth(self, **_):
+        return self.width
+
+    def getRoomName(self, **_):
+        return self.nameR
 
 
     def _findStartHelper(self, imin, imax, time):

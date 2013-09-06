@@ -26,7 +26,6 @@ import os
 from optionwrite import optionWrite
 from optionget import optionGet
 from processor import ParameterFrame, OptionFrame
-from parameters import Parameters
 from commonframes  import TimeFrame
 from window import placeWindow
 import mode as m

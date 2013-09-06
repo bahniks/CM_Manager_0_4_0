@@ -61,13 +61,15 @@ class MWM(SF, CM):
             reflection row - determined by speed
             wrong points in the row
         """
-        return any((self._computeSpeed(self.data[row + i], before) > 250,
+        return any((self._computeSpeed(self.data[row + i], before) > 50,
                     self.data[row + i][2:4] == self.data[row][2:4],
                     self._computeSpeed(reflection, self.data[row + i]) * 30 <
                     self._computeSpeed(before, self.data[row + i]),
                     row + i in self.interpolated))
 
 
+    def _cacheRemoval(self):
+        pass
 
     def removeReflections(self, *args, bothframes = False, **kwargs):
         super().removeReflections(*args, bothframes = bothframes, **kwargs)

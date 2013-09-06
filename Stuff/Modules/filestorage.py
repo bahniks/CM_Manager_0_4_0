@@ -19,6 +19,7 @@ along with Carousel Maze Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 from tkinter.filedialog import askopenfilenames, askdirectory, askopenfilename
 from tkinter import *
+from tkinter import messagebox
 from os.path import basename
 from tkinter import ttk
 from collections import defaultdict, OrderedDict
@@ -309,7 +310,7 @@ class ShowFiles(Toplevel):
             if self.shownFiles == "arenafiles":
                 self.fileStorage.removeFile(file)
             elif self.shownFiles == "wrongfiles":
-                self.fileStorage.wrongfile.remove(file)
+                self.fileStorage.wrongfiles.remove(file)
             self.filesTree.delete(file)
         self.root.root.fileStorageFrame.update()
             
@@ -609,36 +610,45 @@ class FileStorageFrame(ttk.Frame):
             return
         
         # processing file
-        infile = open(filename)
-        files = OrderedDict()
-        toTag = []
-        comments = {}
-        addedReflections = {}
-        for line in infile:
-            if "Files processed" in line:
-                for line in infile:
-                    if not line.strip():
-                        break
-                    if "Comment:" in line:
-                        comments[arenafile] = line.split("Comment: ")[1]
-                        continue
-                    if "Paired with:" in line:
-                        files[arenafile] = line.split("Paired with:")[1].strip()
-                    else:
-                        words = line.strip().split("\t")
-                        arenafile = words[0]
-                        files[arenafile] = ""
-                        if len(words) >= 2 and words[1] == "Tagged":
-                            toTag.append(arenafile)
-            elif "Added reflections" in line:
-                for line in infile:
-                    if line.startswith("\t\t"):
-                        addedReflections[file] = line.strip().split(",")
-                    elif line.startswith("\t"):
-                        file = line.strip()
-            else:
-                continue
-        infile.close()
+        with open(filename) as infile:
+            files = OrderedDict()
+            toTag = []
+            comments = {}
+            addedReflections = {}
+            for line in infile:
+                if "Task: " in line and m.fullname[m.mode] not in line:
+                    text = ("Current mode does not correspond with the loaded files.\n"
+                            "Do you want to still load the files?")
+                    answ = messagebox.askyesno(message = text, icon = "question",
+                                               title = "Proceed?")
+                    if not answ:
+                        self.root.root.config(cursor = "")
+                        self.root.focus_set()
+                        return
+                elif "Files processed" in line:
+                    for line in infile:
+                        if not line.strip():
+                            break
+                        if "Comment:" in line:
+                            comments[arenafile] = line.split("Comment: ")[1]
+                            continue
+
+                        if "Paired with:" in line:
+                            files[arenafile] = line.split("Paired with:")[1].strip()
+                        else:
+                            words = line.strip().split("\t")
+                            arenafile = words[0]
+                            files[arenafile] = ""
+                            if len(words) >= 2 and words[1] == "Tagged":
+                                toTag.append(arenafile)
+                elif "Added reflections" in line:
+                    for line in infile:
+                        if line.startswith("\t\t"):
+                            addedReflections[file] = line.strip().split(",")
+                        elif line.startswith("\t"):
+                            file = line.strip()
+                else:
+                    continue
 
         arenafiles = []
         wrongfiles = []
