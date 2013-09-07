@@ -88,9 +88,17 @@ class TimeFrame(ttk.Frame):
         self.startTime.grid(column = 1, row = 0, sticky = (N, S, W), padx = 3, pady = 2)
 
 
+    def _isfloat(self, value):
+        "checks whether a value can be float"
+        try:
+            float(value)
+            return True
+        except Exeption:
+            return False
+
     def validateTotal(self, newValue):
         "validation of total time - checks if new entry is digits only"
-        if not newValue.isdigit() or eval(newValue) <= eval(self.startTimeVar.get()):
+        if not self._isfloat(newValue) or eval(newValue) <= eval(self.startTimeVar.get()):
             t = max([optionGet("DefStopTime", m.time[m.mode], ['int', 'float']),
                      eval(self.startTimeVar.get()) + 1])
             self.timeVar.set(str(t))
@@ -105,7 +113,7 @@ class TimeFrame(ttk.Frame):
 
     def validateStart(self, newValue):
         "validation of start time - checks if new entry is digits only"
-        if not newValue.isdigit() or eval(newValue) >= eval(self.timeVar.get()):
+        if not self._isfloat(newValue) or eval(newValue) >= eval(self.timeVar.get()):
             t = min([optionGet("DefStartTime", 0, ['int', 'float']),
                      eval(self.timeVar.get()) - 1])
             self.startTimeVar.set(str(t))

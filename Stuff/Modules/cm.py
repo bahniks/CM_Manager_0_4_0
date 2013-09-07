@@ -459,7 +459,7 @@ class CM:
         return format(periphery / (center + periphery), "0.3f")
 
 
-    def getAngleBoxes(self, time = 20, startTime = 0, boxWidth = "default", results = "condensed",
+    def getAngleBoxes(self, time = 20, startTime = 0, width = "default", results = "condensed",
                       center = "target"):
         """returns proportion of time spent in angle boxes of width 'boxWidth' (provided in
                 degreess)
@@ -468,8 +468,8 @@ class CM:
             when boxWidth is not divisor of 360, last box corresponds to the degrees that are
                 unaccounted for
         """
-        if boxWidth == "default":
-            boxWidth = self.width
+        if width == "default":
+            width = self.width
 
         time = time * 60000
         start = self.findStart(startTime)
@@ -481,12 +481,12 @@ class CM:
         else:
             sectorCenterAngle = self.centerAngle + center
   
-        angles = [0] * int(360 / boxWidth)
+        angles = [0] * int(360 / width)
         for content in self.data[start:]:
             if content[1] <= time:
                 angle = (degrees(self._angle(content[2], content[3])) - sectorCenterAngle +
-                         (boxWidth / 2) + 360) % 360
-                angles[int(angle // boxWidth)] += 1
+                         (width / 2) + 360) % 360
+                angles[int(angle // width)] += 1
 
         boxes = [format((box / sum(angles)), "0.3f") for box in angles]
 
@@ -498,14 +498,14 @@ class CM:
 
     def getTimeInTarget(self, time = 20, startTime = 0, width = "default"):
         "returns proportion of time spent in the target sector" 
-        return self.getAngleBoxes(time = time, startTime = startTime, boxWidth = "default",
-                             results = "list")[0]
+        return self.getAngleBoxes(time = time, startTime = startTime, width = width,
+                                  results = "list")[0]
 
         
     def getTimeInOpposite(self, time = 20, startTime = 0, width = "default"):
         "returns proportion of time spent in sector opposite to the target" 
-        return self.getAngleBoxes(time = time, startTime = startTime, boxWidth = "default",
-                             results = "list", center = "opposite")[0]
+        return self.getAngleBoxes(time = time, startTime = startTime, width = width,
+                                  results = "list", center = "opposite")[0]
 
 
     def getTimeInChosenSector(self, width, center, time = 20, startTime = 0):
@@ -513,13 +513,13 @@ class CM:
             parameter width is the sector width
             parameter center is angle of the chosen sector relative to center of the target sector
         """
-        return self.getAngleBoxes(time = time, startTime = startTime, boxWidth = width,
+        return self.getAngleBoxes(time = time, startTime = startTime, width = width,
                              results = "list", center = center)[0]
 
 
     def _angle(self, x, y):
         "returns angle relative to center in radians"
-        return atan2(self.centerY - y, x - self.centerX + 0.000001)
+        return atan2(self.centerY - y, x - self.centerX + 0.000000001)
 
 
     def getDirectionalMean(self, time = 20, startTime = 0):
@@ -562,7 +562,7 @@ class CM:
         time = time * 60000
         start = self.findStart(startTime)
         t0 = startTime
-        x0, y0 = self.data[start][7:9]
+        x0, y0 = self.data[start][self.indices]
         speeds = deque()
 
         prev = t0
@@ -572,7 +572,7 @@ class CM:
         for content in self.data[start+skip::skip]:
             if content[1] > time:
                 break
-            x1, y1 = content[7:9]
+            x1, y1 = content[self.indices]
             t1 = content[1]
             speeds.append((sqrt(((x1 - x0)**2 + (y1 - y0)**2)) / self.trackerResolution) /
                           ((t1 - t0) / 1000))
@@ -662,7 +662,7 @@ class CM:
         time = time * 60000
         start = self.findStart(startTime)
         t0 = startTime
-        x0, y0 = self.data[start][7:9]
+        x0, y0 = self.data[start][self.indices]
         speeds = deque()
 
         mobile = 0
@@ -671,7 +671,7 @@ class CM:
         for content in self.data[start+skip::skip]:
             if content[1] > time:
                 break
-            x1, y1 = content[7:9]
+            x1, y1 = content[self.indices]
             t1 = content[1]
             speeds.append((sqrt(((x1 - x0)**2 + (y1 - y0)**2)) / self.trackerResolution) /
                           ((t1 - t0) / 1000))
@@ -695,7 +695,8 @@ class CM:
         time = time * 60000
         start = self.findStart(startTime)
 
-        distances = [sqrt((content[7] - self.centerX)**2 + (content[8] - self.centerY)**2)
+        distances = [sqrt((content[self.indices][0] - self.centerX)**2 +
+                          (content[self.indices][1] - self.centerY)**2)
                      for content in self.data[start:] if content[1] < time]
         result = (sum(distances) / self.trackerResolution) / len(distances)
 

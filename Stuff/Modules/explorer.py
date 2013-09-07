@@ -89,8 +89,10 @@ class Explorer(ttk.Frame):
         self.timeLabFrame = ttk.Labelframe(self, text = "Time")
         self.timeLabFrame.root = self
         self.timeFrame = TimeFrame(self.timeLabFrame, onChange = True)
-        self.arenaFrame = ttk.LabelFrame(self, text = "Arena frame")
-        self.roomFrame = ttk.LabelFrame(self, text = "Room frame")
+        arenaText = "Arena frame" if m.mode == "CM" else "Animation"
+        self.arenaFrame = ttk.LabelFrame(self, text = arenaText)
+        roomText = "Room frame" if m.mode == "CM" else "Track"
+        self.roomFrame = ttk.LabelFrame(self, text = roomText)
         self.speedScaleFrame = ttk.Frame(self)
         self.speedScaleFrame.rowconfigure(0, weight = 1)
         self.optionsLF = ttk.LabelFrame(self, text = "Options")
@@ -735,18 +737,18 @@ class Explorer(ttk.Frame):
     def _drawTrack(self):
         r = self.r
         if m.mode == "CM":
-            data = [line[2:4] + line[6:9] for count, line in enumerate(self.cm.data) if
+            data = [line[2:4] + line[6:9] for line in self.cm.data if
                     self.minTime <= line[1] <= self.maxTime]
             arena = []
             room = []
             prev = [-100, -100, 0, -100, -100]
             last = [0, 0]
             for count, line in enumerate(data):
-                if abs(line[0] - prev[0]) + abs(line[1] - prev[1]) > 2 or count - last[0] == 15 or\
+                if abs(line[0] - prev[0]) + abs(line[1] - prev[1]) > 2 or count - last[0] == 25 or\
                    line[2] > 0:
                     room.append(line[0:2])
                     last[0] = count
-                if abs(line[3] - prev[3]) + abs(line[4] - prev[4]) > 2 or count - last[1] == 15:
+                if abs(line[3] - prev[3]) + abs(line[4] - prev[4]) > 2 or count - last[1] == 25:
                     arena.append(line[3:5])
                     last[1] = count
                 prev = line
@@ -766,11 +768,18 @@ class Explorer(ttk.Frame):
                                               shock[0] + self.ur, shock[1] + self.ur,
                                               outline = "red", width = 3)
         else:
-            data = [line[2:4] for count, line in enumerate(self.cm.data) if
-                    self.minTime <= line[1] <= self.maxTime]
-            self.roomCanv.create_line(([item + 150 - r for line in data[::5] for item in line]),
+            data = [line[2:4] for line in self.cm.data if self.minTime <= line[1] <= self.maxTime]
+            points = []
+            prev = [-100, -100, 0, -100, -100]
+            last = 0
+            for count, line in enumerate(data):
+                if abs(line[0] - prev[0]) + abs(line[1] - prev[1]) > 2 or count - last == 10:
+                    points.append(line)
+                    last = count
+                prev = line
+            self.roomCanv.create_line(([item + 150 - r for line in points for item in line]),
                                       fill = "black", width = 2)
-
+            
 
     def _initializeAnimation(self):
         r = self.r

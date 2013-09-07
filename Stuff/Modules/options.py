@@ -279,185 +279,60 @@ class GeneralOptions(OptionsCM, Toplevel):
 
         
 class AdvancedOptions(Toplevel):
-    "advanced options window reachable from menu"
+    "parameter settings window reachable from menu"
     def __init__(self, root):
         super().__init__(root)
         self.title("Parameter settings (" + m.fullname[m.mode] + ")")
         self.grab_set()
         self.focus_set()
-        self.resizable(FALSE, FALSE)   
-        placeWindow(self, 389, 682)
+        self.resizable(FALSE, FALSE)
+        self.minsize(400, 300)
+        placeWindow(self, 400, 682)
+        self.columnconfigure(0, weight = 3)
+        self.columnconfigure(1, weight = 1)
+        self.columnconfigure(2, weight = 1)
+        self.columnconfigure(3, weight = 3)
         self["padx"] = 10
         self["pady"] = 10
+
          
-
-        self.saveBut = ttk.Button(self, text = "Save", command = self.saveFun)
         self.okBut = ttk.Button(self, text = "Ok", command = self.okFun)
-        self.cancelBut = ttk.Button(self, text = "Cancel", command = self.cancelFun)
+        self.okBut.grid(column = 1, row = 1, padx = 3, pady = 2)
+        self.cancelBut = ttk.Button(self, text = "Cancel", command = self.cancelFun)    
+        self.cancelBut.grid(column = 2, row = 1, padx = 3, pady = 2)
 
-        self.saveBut.grid(column = 0, row = 3, padx = 3, pady = 2)
-        self.okBut.grid(column = 1, row = 3, padx = 3, pady = 2)
-        self.cancelBut.grid(column = 2, row = 3, padx = 3, pady = 2)
 
+        self.settingsFrame = ttk.Frame(self)
+        self.settingsFrame.grid(row = 0, column = 0, columnspan = 4, padx = 3, pady = 4,
+                                   sticky = (N, W, E))
+        self.settingsFrame.columnconfigure(0, weight = 1)
+        self.optionFrames = []
         
-        # parameter settings
-        self.parSettingsFrame = ttk.Frame(self)
-        self.parSettingsFrame.grid(row = 1, column = 0, columnspan = 3, padx = 3, pady = 4,
-                                   sticky = (N, W))
-        self.parSettingsFrame.columnconfigure(1, weight = 1)
-        
-        self.RlabelWidth = 8
-        self.EntryWidth = 10
-        
+        mapping = {"degrees": "°", "seconds": "s", "percents": "%"}
+        for name, par in m.parameters.items():
+            if not par.options:
+                continue
+            options = []
+            for option in par.options.values():
+                strings = option[1].split(" [in ")
+                if len(strings) == 2:
+                    text, unit = strings
+                    unit = unit.rstrip("]")
+                    unit = mapping[unit] if unit in mapping else unit
+                else:
+                    text, unit = strings[0], None
+                text = text.strip()
+                opt = option[0]
+                options.append((text + ": ", (opt.name, opt.default, opt.types), unit))
+            self.optionFrames.append(ParameterOptionFrame(self.settingsFrame, name, options))
 
-        # thigmotaxis - mozno nahradit pomoci ParameterOptionFrame !
-        self.thigmotaxisFrame = ttk.Labelframe(self.parSettingsFrame, text = "Thigmotaxis")
-        self.thigmotaxisFrame.grid(column = 0, row = 2, columnspan = 3, pady = 3, padx = 3,
-                                   sticky = (W, E))
-        self.thigmotaxisFrame.columnconfigure(0, weight = 1)
-                             
-        self.thigmotaxisVar = StringVar()
-        self.thigmotaxisVar.set(optionGet("ThigmotaxisPercentSize", 20, ["int", "float"]))
-
-        self.thigmotaxisEntry = ttk.Entry(self.thigmotaxisFrame,
-                                          textvariable = self.thigmotaxisVar,
-                                          width = self.EntryWidth, justify = "right")
-        self.thigmotaxisEntry.grid(column = 1, row = 1, padx = 1, pady = 2)
-        self.thigmotaxisLab = ttk.Label(self.thigmotaxisFrame, text = "Annulus width:")
-        self.thigmotaxisLab.grid(column = 0, row = 1, padx = 1, pady = 2, sticky = E)
-        self.percentLab = ttk.Label(self.thigmotaxisFrame, text = "%", width = self.RlabelWidth)
-        self.percentLab.grid(column = 2, row = 1, padx = 1, pady = 2, sticky = W)
-
-
-        # setting of Time in chosen sector parameter
-        self.TimeInChosenFrame = ttk.Labelframe(self.parSettingsFrame,
-                                                text = "Time in chosen sector")
-        self.TimeInChosenFrame.grid(column = 0, row = 0, columnspan = 3, pady = 3, padx = 3)
-                               
-        self.TimeInChosenWidthVar = StringVar()
-        self.TimeInChosenWidthVar.set(optionGet('WidthParTimeInChosen', 'default',
-                                                ['int', 'float']))
-        self.TimeInChosenWidthEntry = ttk.Entry(self.TimeInChosenFrame, textvariable =
-                                                self.TimeInChosenWidthVar, width = self.EntryWidth,
-                                                justify = "right")
-        self.TimeInChosenWidthEntry.grid(column = 1, row = 1, padx = 2, pady = 2)
-
-        self.TimeInChosenWidthLab = ttk.Label(self.TimeInChosenFrame, text =
-                                              "Width of sector ('default' if same as target):")
-        self.TimeInChosenWidthLab.grid(column = 0, row = 1, pady = 2, sticky = (E))
-        self.DegreesLab = ttk.Label(self.TimeInChosenFrame, text = "°", width = self.RlabelWidth)
-        self.DegreesLab.grid(column = 2, row = 1, pady = 2)
-
-        self.TimeInChosenAngleVar = StringVar()
-        self.TimeInChosenAngleVar.set(optionGet('AngleParTimeInChosen', 0, ['int', 'float']))
-        self.TimeInChosenAngleEntry = ttk.Entry(self.TimeInChosenFrame, textvariable =
-                                                self.TimeInChosenAngleVar, width = self.EntryWidth,
-                                                justify = "right")
-        self.TimeInChosenAngleEntry.grid(column = 1, row = 0, padx = 2, pady = 2)
-
-        self.TimeInChosenAngleLab = ttk.Label(self.TimeInChosenFrame,
-                                              text = "Center of sector relative to the target:")
-        self.TimeInChosenAngleLab.grid(column = 0, row = 0, pady = 2, sticky = (E))
-        self.DegreesLab2 = ttk.Label(self.TimeInChosenFrame, text = "°", width = self.RlabelWidth)
-        self.DegreesLab2.grid(column = 2, row = 0, pady = 2)
-
-        
-        # setting of Time in sectors parameter
-        self.TimeInSectorsFrame = ttk.Labelframe(self.parSettingsFrame,
-                                                text = "Time in sectors")
-        self.TimeInSectorsFrame.grid(column = 0, row = 1, columnspan = 3, pady = 3, padx = 3)
-                               
-        self.TimeInSectorsWidthVar = StringVar()
-        self.TimeInSectorsWidthVar.set(optionGet('WidthParTimeInSectors', 'default',
-                                                ['int', 'float']))
-        self.TimeInSectorsWidthEntry = ttk.Entry(self.TimeInSectorsFrame, textvariable =
-                                                 self.TimeInSectorsWidthVar, width =
-                                                 self.EntryWidth, justify = "right")
-        self.TimeInSectorsWidthEntry.grid(column = 1, row = 1, padx = 2, pady = 2)
-
-        self.TimeInSectorsWidthLab = ttk.Label(self.TimeInSectorsFrame, text =
-                                              "Width of sector ('default' if same as target):")
-        self.TimeInSectorsWidthLab.grid(column = 0, row = 1, pady = 2, sticky = (E))
-        self.DegreesLab3 = ttk.Label(self.TimeInSectorsFrame, text = "°", width = self.RlabelWidth)
-        self.DegreesLab3.grid(column = 2, row = 1, pady = 2)
-
-
-        # setting of Total distance parameter
-        self.totalDistance = ParameterOptionFrame(
-            self.parSettingsFrame, "Total distance",
-            (("Sampling after every:", ('StrideParTotalDistance', 25, 'int'), "rows"),
-             ("Minimal distance counted:", ('MinDiffParTotalDistance', 0,['int',
-                                                                          'float']), "pixels"))
-            )
-        self.totalDistance.grid(column = 0, row = 3, columnspan = 3, pady = 3, padx = 3,
-                                sticky = (W, E))
-
-        # setting of Maximum time of immobility parameter
-        self.maximumTimeImmobility = ParameterOptionFrame(
-            self.parSettingsFrame, "Maximum time of immobility",
-            (("Minimum speed counted:", ('MinSpeedMaxTimeImmobility', 10, ['int',
-                                                                           'float']), "cm/s"),
-             ("Computed from every:", ('SkipMaxTimeImmobility', 12, ['int']), "rows"),
-             ("Averaged across:", ('SmoothMaxTimeImmobility', 2, ['int']), "intervals"))
-            )
-        self.maximumTimeImmobility.grid(column = 0, row = 4, columnspan = 3, pady = 3, padx = 3,
-                                        sticky = (W, E))
-
-        # setting of Periodicity parameter
-        self.periodicity = ParameterOptionFrame(
-            self.parSettingsFrame, "Periodicity",
-            (("Minimum speed counted:", ('MinSpeedPeriodicity', 10, ['int', 'float']), "cm/s"),
-             ("Computed from every:", ('SkipPeriodicity', 12, ['int']), "rows"),
-             ("Averaged across:", ('SmoothPeriodicity', 2, ['int']), "intervals"),
-             ("Minimum time of interval:", ('MinTimePeriodicity', 9, ['int', 'float',
-                                                                      'list']), "seconds"))
-            )                                                                     
-        self.periodicity.grid(column = 0, row = 5, columnspan = 3, pady = 3, padx = 3,
-                              sticky = (W, E))                                                       
-
-        # setting of Proportion of time moving parameter
-        self.percentMobility = ParameterOptionFrame(
-            self.parSettingsFrame, "Proportion of time moving",
-            (("Minimum speed counted:", ('MinSpeedPercentMobility', 5, ['int', 'float']), "cm/s"),
-             ("Computed from every:", ('SkipPercentMobility', 12, 'int'), "rows"),
-             ("Averaged across:", ('SmoothPercentMobility', 2, 'int'), "intervals"))
-            )
-        self.percentMobility.grid(column = 0, row = 6, columnspan = 3, pady = 3, padx = 3,
-                                  sticky = (W, E))
-
-        # setting of Median speed after shock parameter
-        self.speedAfterShock = ParameterOptionFrame(
-            self.parSettingsFrame, "Median speed after shock",
-            (("Computed from every:", ('SkipSpeedAfterShock', 25, 'int'), "rows"),
-             ("Absolute speeds:", ('AbsoluteSpeedAfterShock', 'False', 'bool'), ""))            
-            )
-        self.speedAfterShock.grid(column = 0, row = 7, columnspan = 3, pady = 3, padx = 3,
-                                  sticky = (W, E))
-        
-        # setting of minimum distance from margin of the arena to be counted as an outside point
-        self.outsidePoints = ParameterOptionFrame(
-            self.parSettingsFrame, "Outside points",
-            (("Distance from the arena margin:", ('OutsidePointsDistance', 1, 'int'), "pixels"),)
-            )
-        self.outsidePoints.grid(column = 0, row = 8, columnspan = 3, pady = 3, padx = 3,
-                                sticky = (W, E)) 
-                                                    
-
-    def saveFun(self):
-        optionWrite('WidthParTimeInChosen', self.TimeInChosenWidthVar.get())
-        optionWrite('AngleParTimeInChosen', self.TimeInChosenAngleVar.get())
-        optionWrite('ThigmotaxisPercentSize', self.thigmotaxisVar.get())
-        optionWrite('WidthParTimeInSectors', self.TimeInSectorsWidthVar.get())
-        self.totalDistance.save()
-        self.maximumTimeImmobility.save()
-        self.periodicity.save()
-        self.percentMobility.save()
-        self.speedAfterShock.save()
-        self.outsidePoints.save()
-        
+        for row, frame in enumerate(self.optionFrames):
+            frame.grid(column = 0, row = row, pady = 3, padx = 3, sticky = (W, E))
+                                                               
 
     def okFun(self):
-        self.saveFun()
+        for frame in self.optionFrames:
+            frame.save()
         self.destroy()
 
 
@@ -472,43 +347,39 @@ class ParameterOptionFrame(ttk.Labelframe):
     frame with options for one parameter
         options = ((text, option, sign), (...)), where option = (option name, default, types)
     """
-    def __init__(self, root, name, options, entryWidth = 10, rightLabWidth = 8):
+    def __init__(self, root, name, options):
         super().__init__(root, text = name)
-        self.options = options
         
+        self.options = options
+        self.opts = []
+        
+        entryWidth = 10
+        rightLabWidth = 8
+
         for row, option in enumerate(options):
+            self.opts.append({})
+            var = BooleanVar if option[1][2] == 'bool' else StringVar
+            self.opts[row]["variable"] = var()
+            self.opts[row]["variable"].set(optionGet(*option[1]))
+            self.opts[row]["label"] = ttk.Label(self, text = option[0])
+            self.opts[row]["label"].grid(column = 0, row = row, pady = 2, sticky = E)
             if option[1][2] == 'bool':
-                exec("self.{}Var = BooleanVar()".format(option[1][0]))
+                self.opts[row]["input"] = ttk.Checkbutton(self, onvalue = True, offvalue = False,
+                                                          variable = self.opts[row]["variable"])
             else:
-                exec("self.{}Var = StringVar()".format(option[1][0]))
-            exec("self.{}Var.set({})".format(option[1][0], optionGet(*option[1])))
-            exec("self.{}Lab = ttk.Label(self, text = '{}')".format(option[1][0],
-                                                                              option[0]))
-            exec("self.{}Lab.grid(column = 0, row = {}, pady = 2, sticky = E)".format(option[1][0],
-                                                                                      row))
-            if option[1][2] == 'bool':
-                exec("""self.{}Checkbutton = ttk.Checkbutton(self, variable = self.{}Var,
-                     onvalue = True, offvalue = False)""".format(option[1][0], option[1][0]))
-                exec("self.{}Checkbutton.grid(column = 1, row = {}, padx = 2, pady = 2)".format(
-                    option[1][0], row))
-            else:
-                exec("""self.{}Entry = ttk.Entry(self, textvariable = self.{}Var, width = {},
-                     justify = 'right')""".format(option[1][0], option[1][0], entryWidth))
-                exec("self.{}Entry.grid(column = 1, row = {}, padx = 2, pady = 2)".format(
-                    option[1][0], row))
-            exec("self.{}Sign = ttk.Label(self, text = '{}', width = {})".format(
-                option[1][0], option[2], rightLabWidth))
-            exec("self.{}Sign.grid(column = 2, row = {}, pady = 2, sticky = W)".format(
-                option[1][0], row))
+                self.opts[row]["input"] = ttk.Entry(self, width = entryWidth, justify = 'right',
+                                                    textvariable = self.opts[row]["variable"])
+            self.opts[row]["input"].grid(column = 1, row = row, padx = 2, pady = 2)
+            self.opts[row]["sign"] = ttk.Label(self, text = option[2], width = rightLabWidth)
+            self.opts[row]["sign"].grid(column = 2, row = row, pady = 2, sticky = W)
 
         self.columnconfigure(0, weight = 1)
 
 
     def save(self):
-        for option in self.options:
-            if option[1][2] == 'bool':
-                optionWrite(option[1][0], bool(eval("self.{}Var.get()".format(option[1][0]))))
-            else:
-                optionWrite(option[1][0], eval("self.{}Var.get()".format(option[1][0])))
+        for row, option in enumerate(self.options):
+            value = str(self.opts[row]["variable"].get())
+            value = bool(eval(value)) if option[1][2] == 'bool' else eval(value)       
+            optionWrite(option[1][0], value)
 
         

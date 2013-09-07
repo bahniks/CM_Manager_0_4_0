@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with Carousel Maze Manager.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+from math import degrees, sqrt, cos, sin, radians
 
 
 from cm import CM
@@ -34,7 +35,7 @@ class MWM(SF, CM):
         # processing data from arena frame
         with open(self.nameA, "r") as infile:
             self._processHeader(infile)
-            self.centerAngle = self._angle(self.platformX, self.platformY)
+            self.centerAngle = (degrees(self._angle(self.platformX, self.platformY)) + 360) % 360
             endsplit = 6 if self.tracker == "Tracker" else 7
             self._processRoomFile(infile, endsplit = endsplit)
 
@@ -52,6 +53,103 @@ class MWM(SF, CM):
         self.platformRadius = eval(string[position+3])
 
 
+
+
+    def getT1Pass(self, time = 1, startTime = 0, lastTime = "fromParameter"):
+        """computes time to first shock (in seconds),
+        argument 'time' is time of the session
+        argument 'lastTime' decides whether the last time point is obtained from 'time' parameter
+            or data
+        """
+        time = time * 60000 # conversion from minutes to miliseconds
+        start = self.findStart(startTime)
+        T1 = 0
+        for content in self.data[start:]:
+            if content[5] == 0:
+                continue
+            elif content[5] > 0 and content[5] != 5:
+                T1 = content[1] - startTime
+                break
+            
+        if T1 == 0 or T1 > time - startTime:
+            if lastTime == "fromData": # not used - may be added as an option in the future
+                T1 = min(time, self.data[-1][1]) - startTime
+            elif lastTime == "fromParameter":
+                T1 = time - startTime
+                
+        T1 = T1 / 1000 # conversion from miliseconds to seconds
+        return format(T1, "0.1f")
+
+
+    def getPasses(self, time = 1, startTime = 0):
+        """computes number of entrances,
+        argument 'time' is time of the session
+        """
+        time *= 60000
+        start = self.findStart(startTime)
+        passes = 0
+        prev = 0
+        for content in self.data[start:]:
+            if content[5] == 0 and prev != 2 and content[1] <= time:
+                continue
+            elif content[5] == 0 and prev == 2 and content[1] <= time:
+                if content[5] == 0: 
+                    prev = 0
+                continue
+            elif content[5] > 0 and content[5] != 5 and prev == 2 and content[1] <= time:
+                continue
+            elif content[5] > 0 and content[5] != 5 and prev != 2 and content[1] <= time:
+                passes += 1
+                prev = 2
+                continue
+            elif content[1] > time:
+                break
+        return passes
+
+
+    def getAvgDistance(self, time = 1, startTime = 0, x = "platform", y = "platform",
+                       removeBeginning = False, skip = 25, minDifference = 0):
+
+        time *= 60000 # conversion from minutes to miliseconds
+        start = self.findStart(startTime)
+
+        x = self.platformX if x == "platform" else x
+        y = self.platformY if y == "platform" else y
+
+        if removeBeginning:
+            distance = self.getDistance(skip = skip, time = time / 60000, startTime = startTime,
+                                        minDifference = minDifference)
+            t = min([time, self.data[-1][1]])
+            speed = distance * self.trackerResolution * 100 / t # pixels / ms
+            distanceToTarget = sqrt((self.data[0][2] - x)**2 + (self.data[0][3] - y)**2)
+            timeToReachTarget = distanceToTarget / (speed * 60000) # in minutes
+            start = self.findStart(max([timeToReachTarget, startTime]))
+            
+        sumDistance = 0
+        
+        for content in self.data[start:]:
+            if content[1] > time:
+                break
+            currentDistance = sqrt((content[2] - x)**2 + (content[3] - y)**2) - self.platformRadius
+            if currentDistance > 0:
+                sumDistance += currentDistance
+        averageDistance = sumDistance / (content[0] - start)       
+        averageDistance /= self.trackerResolution # conversion to centimetres
+
+        return format(averageDistance, "0.2f")
+
+
+    def getAvgDistanceChosen(self, time = 1, startTime = 0, angle = 180, **kwargs):
+        angle += self.centerAngle
+        angle = radians(angle)        
+        dist = sqrt((self.centerX - self.platformX)**2 + (self.centerY - self.platformY)**2)
+        x = self.centerX + cos(angle)*dist 
+        y = self.centerY - sin(angle)*dist
+        return self.getAvgDistance(time = time, startTime = startTime, x = x, y = y, **kwargs)
+        
+
+
+
    
     def _removalCondition(self, row, i, before, reflection):
         """conditions in order of appearance:
@@ -66,9 +164,10 @@ class MWM(SF, CM):
                     self._computeSpeed(reflection, self.data[row + i]) * 30 <
                     self._computeSpeed(before, self.data[row + i]),
                     row + i in self.interpolated))
-
+    
 
     def _cacheRemoval(self):
+        "overrides CM method, MWM has no cache"
         pass
 
     def removeReflections(self, *args, bothframes = False, **kwargs):

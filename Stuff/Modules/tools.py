@@ -222,10 +222,10 @@ class SetBatchTime(Toplevel):
                     raise Exception("{} is not a tuple.".format(pair))
                 if len(pair) != 2:
                     raise Exception("{} has more than two items (needs exactly two).".format(pair))
-                if not isinstance(pair[0], int):
-                    raise Exception("{} is not an integer.".format(pair[0]))
-                if not isinstance(pair[1], int):
-                    raise Exception("{} is not an integer.".format(pair[1]))
+                if not isinstance(pair[0], int) and not isinstance(pair[0], float):
+                    raise Exception("{} is not an integer or float.".format(pair[0]))
+                if not isinstance(pair[1], int) and not isinstance(pair[1], float):
+                    raise Exception("{} is not an integer or float.".format(pair[1]))
                 if pair[0] >= pair[1]:
                     raise Exception("The first item in every pair must be lower than the second.")
         except Exception as e:

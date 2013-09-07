@@ -33,7 +33,7 @@ class ParametersCM(OrderedDict):
         super().__init__()
         self["Total distance"] = Par("getDistance", "basic", {
             "skip": (Opt('StrideParTotalDistance', 25, 'int'),
-                     "Computed from every [skip in rows]"),
+                     "Computed from every [in rows]"),
             "minDifference": (Opt('MinDiffParTotalDistance', 0, ['int', 'float']),
                               "Minimal distance counted [in pixels]")
             })
@@ -45,17 +45,17 @@ class ParametersCM(OrderedDict):
         self["Time in opposite sector"] = Par("getTimeInOpposite", "basic", {})
         self["Time in chosen sector"] = Par("getTimeInChosenSector", "advanced", {
             "width": (Opt('WidthParTimeInChosen', 'default', ['int', 'float']),
-                      "Width of sector ('default' if same as target; otherwise in degrees)"),
+                      "Width of sector ('default' if same as target) [in degrees]"),
             "center": (Opt('AngleParTimeInChosen', 0, ['int', 'float']),
                        "Center of sector relative to the target [in degrees]")
             })
         self["Time in sectors"] = Par("getAngleBoxes", "advanced", {
-            "boxWidth": (Opt('WidthParTimeInSectors', 'default', ['int', 'float']),
-                         "Width of sector ('default' if same as target; otherwise in degrees)")
+            "width": (Opt('WidthParTimeInSectors', 'default', ['int', 'float']),
+                      "Width of sector ('default' if same as target) [in degrees]")
             })
         self["Thigmotaxis"] = Par("getThigmotaxis", "advanced", {
             "percentSize": (Opt('ThigmotaxisPercentSize', 20, ['int', 'float']),
-                            "Annulus width [percent of radius]")
+                            "Annulus width [in percents]")
             })
         self["Directional mean"] = Par("getDirectionalMean", "advanced", {})
         self["Circular variance"] = Par("getCircularVariance", "advanced", {})                
@@ -63,17 +63,17 @@ class ParametersCM(OrderedDict):
             "minSpeed": (Opt('MinSpeedMaxTimeImmobility', 10, ['int', 'float']),
                          "Minimum speed counted [in cm/s]"),
             "skip": (Opt('SkipMaxTimeImmobility', 12, ['int']),
-                     "Computed from every [skip in rows]"),
+                     "Computed from every [in rows]"),
             "smooth": (Opt('SmoothMaxTimeImmobility', 2, ['int']),
-                       "Averaged across [intervals]")
+                       "Averaged across [in intervals]")
             })                
         self["Periodicity"] = Par("getPeriodicity", "experimental", {
             "minSpeed": (Opt('MinSpeedPeriodicity', 10, ['int', 'float']),
                          "Minimum speed counted [in cm/s]"),
             "skip": (Opt('SkipPeriodicity', 12, ['int']),
-                     "Computed from every [skip in rows]"),
+                     "Computed from every [in rows]"),
             "smooth": (Opt('SmoothPeriodicity', 2, ['int']),
-                       "Averaged across [intervals]"),
+                       "Averaged across [in intervals]"),
             "minTime": (Opt('MinTimePeriodicity', 9, ['int', 'float', 'list']),
                         "Minimum time of interval [in seconds]")
             })   
@@ -81,14 +81,14 @@ class ParametersCM(OrderedDict):
             "minSpeed": (Opt('MinSpeedPercentMobility', 5, ['int', 'float']),
                          "Minimum speed counted [in cm/s]"),
             "skip": (Opt('SkipPercentMobility', 12, ['int']),
-                     "Computed from every [skip in rows]"),
+                     "Computed from every [in rows]"),
             "smooth": (Opt('SmoothPercentMobility', 2, ['int']),
-                       "Averaged across [intervals]")
+                       "Averaged across [in intervals]")
             })    
         self["Mean distance from center"] = Par("getMeanDistanceFromCenter", "advanced", {}) 
         self["Median speed after shock"] = Par("getSpeedAfterShock", "experimental", {
             "after": (Opt('SkipSpeedAfterShock', 25, ['int']),
-                      "Computed from every [skip in rows]"),
+                      "Computed from every [in rows]"),
             "absolute": (Opt('AbsoluteSpeedAfterShock', False, 'bool'),
                          "Computed from absolute values")
             })    
@@ -119,12 +119,91 @@ class ParametersCM(OrderedDict):
     ''' # TODO
 
 
-class ParametersMWM(ParametersCM):
-    pass
+class ParametersMWM(OrderedDict):
+    def __init__(self):
+        super().__init__()
+        mwm = {"Total distance",
+               "Time to first",
+               "Time in target sector",
+               "Time in opposite sector",
+               "Time in chosen sector",
+               "Time in sectors",
+               "Thigmotaxis",
+               "Directional mean",
+               "Circular variance",
+               "Maximum time of immobility",
+               "Proportion of time moving",
+               "Mean distance from center",
+               "Real minimum time",
+               "Real maximum time"}
+        for name, parameter in ParametersCM().items():
+            if name in mwm:
+                self[name] = parameter
+                
+        widths = {"Time in target sector": 'WidthParTimeInTarget',
+                  "Time in opposite sector": 'WidthParTimeInOpposite',
+                  "Time in chosen sector": 'WidthParTimeInChosen',
+                  "Time in sectors": 'WidthParTimeInSectors'}
+        for method, option in widths.items():
+            newOpt = (Opt(option, 90, ['int', 'float']), "Width of sector [in degrees]")
+            newOptions = self[method].options["width"] = newOpt
+            self[method]._replace(options = newOptions)
+
+        self["Time to first pass"] = Par("getT1Pass", "basic", {})
+        self["Passes"] = Par("getPasses", "basic", {})
+        self["Average distance from target"] = Par("getAvgDistance", "advanced", {
+            "removeBeginning": (Opt('RemoveBeginningAvgDistance', False, 'bool'),
+                                "Remove minimal time needed to reach target"),
+            "skip": (Opt('StrideParAvgDistance', 25, 'int'),
+                     "Computed from every [in rows]"),
+            "minDifference": (Opt('MinDiffParAvgDistance', 0, ['int', 'float']),
+                              "Minimal distance counted [in pixels]")
+            })  
+        self["Average distance from chosen"] = Par("getAvgDistanceChosen", "advanced", {
+            "angle": (Opt('angleParAvgDistanceCustom', 180, ['int', 'float']),
+                      "Angle of chosen location relative to the target [in degrees]"),
+            "removeBeginning": (Opt('RemoveBeginningAvgDistanceCustom', False, 'bool'),
+                                "Remove minimal time needed to reach target"),
+            "skip": (Opt('StrideParAvgDistanceCustom', 25, 'int'),
+                     "Computed from every [in rows]"),
+            "minDifference": (Opt('MinDiffParAvgDistanceCustom', 0, ['int', 'float']),
+                              "Minimal distance counted [in pixels]")
+            }) 
+
+        
+
+class ParametersOF(OrderedDict):
+    def __init__(self):
+        super().__init__()
+        of = {"Total distance",
+              "Thigmotaxis", # ta bude potreba zmenit
+              "Directional mean",
+              "Circular variance",
+              "Maximum time of immobility",
+              "Proportion of time moving",
+              "Mean distance from center",
+              "Real minimum time",
+              "Real maximum time"} # pridat time in quadrants, vzdalenost od steny
+        for name, parameter in ParametersCM().items():
+            if name in of:
+                self[name] = parameter
 
 
-class ParametersOF(ParametersCM):
-    pass
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
