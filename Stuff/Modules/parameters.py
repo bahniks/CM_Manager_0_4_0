@@ -154,21 +154,22 @@ class ParametersMWM(OrderedDict):
         self["Average distance from target"] = Par("getAvgDistance", "advanced", {
             "removeBeginning": (Opt('RemoveBeginningAvgDistance', False, 'bool'),
                                 "Remove minimal time needed to reach target"),
-            "skip": (Opt('StrideParAvgDistance', 25, 'int'),
+            "skip": (Opt('StrideParAvgDistance', 1, 'int'),
                      "Computed from every [in rows]"),
             "minDifference": (Opt('MinDiffParAvgDistance', 0, ['int', 'float']),
                               "Minimal distance counted [in pixels]")
             })  
         self["Average distance from chosen"] = Par("getAvgDistanceChosen", "advanced", {
-            "angle": (Opt('angleParAvgDistanceCustom', 180, ['int', 'float']),
+            "angle": (Opt('angleParAvgDistanceCustom', 180, ['int', 'float', 'list']),
                       "Angle of chosen location relative to the target [in degrees]"),
             "removeBeginning": (Opt('RemoveBeginningAvgDistanceCustom', False, 'bool'),
                                 "Remove minimal time needed to reach target"),
-            "skip": (Opt('StrideParAvgDistanceCustom', 25, 'int'),
+            "skip": (Opt('StrideParAvgDistanceCustom', 1, 'int'),
                      "Computed from every [in rows]"),
             "minDifference": (Opt('MinDiffParAvgDistanceCustom', 0, ['int', 'float']),
                               "Minimal distance counted [in pixels]")
-            }) 
+            })
+        self["Angle of the platform"] = ParametersCM()["Angle of target sector"]
 
         
 

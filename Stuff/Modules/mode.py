@@ -22,7 +22,7 @@ from collections import namedtuple
 
 from cm import CM
 from mwm import MWM
-from openfield import OF
+from of import OF
 from parameters import ParametersCM, ParametersMWM, ParametersOF
 
 

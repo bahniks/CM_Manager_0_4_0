@@ -115,7 +115,7 @@ class Explorer(ttk.Frame):
         # checkbuttons
         self.removeReflections = ttk.Checkbutton(self.optionsLF, text = "Remove reflections",
                                                  variable = self.removeReflectionsVar,
-                                                 command = self.toggleReflections)
+                                                 command = self.toggleReflections)       
         self.showShocks = ttk.Checkbutton(self.optionsLF, text = "Show shocks",
                                           variable = self.showShocksVar,
                                           command = self.toggleShocks)
@@ -190,7 +190,7 @@ class Explorer(ttk.Frame):
         self.controlsLF.grid(column = 0, row = 3, columnspan = 2, sticky = (N, W), pady = 2,
                              padx = 2)
         self.graphLF.grid(column = 0, row = 5, columnspan = 1, pady = 2, padx = 2, sticky = (N, W))
-        self.fileStorageFrame.grid(column = 8, row = 0, pady = 2, padx = 3, sticky = (N, W))
+        self.fileStorageFrame.grid(column = 8, row = 0, pady = 2, padx = 3, sticky = (N, E))
         self.fileFrame.grid(column = 8, row = 1, rowspan = 4, padx = 3, sticky = (N, S))
         self.parametersLF.grid(column = 3, row = 3, columnspan = 3)
         self.timeLabFrame.grid(column = 1, row = 5, columnspan = 4, sticky = (N, W), pady = 2)        
@@ -214,11 +214,13 @@ class Explorer(ttk.Frame):
         self.saveBut.grid(column = 1, row = 2, sticky = E)
 
         self.removeReflections.grid(column = 1, row = 0, padx = 3, pady = 2, sticky = (N, W))
-        self.showShocks.grid(column = 1, row = 1, padx = 3, pady = 2, sticky = (N, W))
+        if m.mode == "CM":
+            self.showShocks.grid(column = 1, row = 1, padx = 3, pady = 2, sticky = (N, W))
         self.showTail.grid(column = 1, row = 2, padx = 3, pady = 2, sticky = (N, W))
 
-        self.showAnimation.grid(column = 0, row = 0, padx = 2, pady = 1, sticky = (N, W))
-        self.showTrack.grid(column = 0, row = 1, padx = 2, pady = 1, sticky = (N, W))
+        if m.mode == "CM":
+            self.showAnimation.grid(column = 0, row = 0, padx = 2, pady = 1, sticky = (N, W))
+            self.showTrack.grid(column = 0, row = 1, padx = 2, pady = 1, sticky = (N, W))
         
         self.speedEntry.grid(column = 0, row = 1)
 

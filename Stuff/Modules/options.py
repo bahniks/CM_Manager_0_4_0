@@ -91,7 +91,7 @@ class OptionsCM(Toplevel):
         self.grab_set()
         self.focus_set()
         self.resizable(FALSE, FALSE)
-        placeWindow(self, 824, 844)
+        placeWindow(self, 720, 350)
         self["padx"] = 10
         self["pady"] = 10
         
@@ -113,29 +113,31 @@ class OptionsCM(Toplevel):
         # grid of self contents        
         self.parametersF.grid(row = 0, column = 0, columnspan = 2, sticky = (N, W), padx = 4,
                               pady = 2)
-        self.buttonFrame.grid(row = 3, column = 0, columnspan = 2, padx = 3, pady = 4,\
+        self.buttonFrame.grid(row = 3, column = 0, columnspan = 2, padx = 3, pady = 6,
                               sticky = (E, W, N, S))
-        self.timeLabFrame.grid(row = 1, column = 1, padx = 3, pady = 4, sticky = (N, W))
+        self.timeLabFrame.grid(row = 1, column = 1, padx = 6, pady = 4, sticky = (N, W, E))
         self.fileDirectory.grid(row = 1, column = 0, pady = 2, padx = 2, sticky = (E, W))
         
                                    
     def _createButtons(self):
         # buttons
         self.buttonFrame = ttk.Frame(self)
-        self.buttonFrame.columnconfigure(1, weight = 1)
+        self.buttonFrame.columnconfigure(0, weight = 3)
+        self.buttonFrame.columnconfigure(2, weight = 1)
+        self.buttonFrame.columnconfigure(4, weight = 3)
 
         self.okBut = ttk.Button(self.buttonFrame, text = "Ok", command = self.okFun)
         self.cancelBut = ttk.Button(self.buttonFrame, text = "Cancel", command = self.cancelFun)
 
         self.okBut.grid(column = 1, row = 0, padx = 3, pady = 2)
-        self.cancelBut.grid(column = 2, row = 0, padx = 3, pady = 2, sticky = (E))
+        self.cancelBut.grid(column = 3, row = 0, padx = 3, pady = 2, sticky = (E))
 
         
     def saveFun(self):
         "saves all options"
         self.parametersF.saveSelectedParametersAsDefault()
-        optionWrite("DefStartTime", self.timeFrame.startTimeVar.get())
-        optionWrite("DefStopTime", self.timeFrame.timeVar.get())
+        optionWrite("DefStartTime", self.timeFrame.startTimeVar.get(), False)
+        optionWrite("DefStopTime", self.timeFrame.timeVar.get(), False)
         directory = self.fileDirectory.get().rstrip("\/")
         if os.path.exists(directory):
             optionWrite("FileDirectory", "r'" + directory  + "'", False)
@@ -167,7 +169,7 @@ class GeneralOptions(OptionsCM, Toplevel):
         self.grab_set()
         self.focus_set()
         self.resizable(FALSE, FALSE)
-        placeWindow(self, 824, 844)
+        placeWindow(self, 554, 499)
         self["padx"] = 10
         self["pady"] = 10
 
@@ -235,7 +237,7 @@ class GeneralOptions(OptionsCM, Toplevel):
         self.commentColor.grid(column = 2, row = 0, padx = 2, pady = 2)
         self.fileTypeFrame.grid(row = 0, column = 0, padx = 3, pady = 4,
                                 sticky = (W, N, E, S))
-        self.buttonFrame.grid(row = 3, column = 0, columnspan = 2, padx = 3, pady = 4,\
+        self.buttonFrame.grid(row = 3, column = 0, columnspan = 3, padx = 3, pady = 6,
                               sticky = (E, W, N, S))
         self.separatorFrame.grid(row = 1, column = 0, padx = 3, pady = 4,
                                  sticky = (W, N, E))
@@ -246,15 +248,15 @@ class GeneralOptions(OptionsCM, Toplevel):
 
     def saveFun(self):
         "saves all options"
-        optionWrite("DefProcessOutputFileType", "'" + self.fileTypeVar.get() + "'")
-        optionWrite("SaveFullPath", self.saveFilenameAs.get())
-        optionWrite("ResultSeparator", "'" + self.separatorVar.get() + "'")
-        optionWrite("ProcessWhat", "'" + self.processorOptions.processWhat.get() + "'")
+        optionWrite("DefProcessOutputFileType", "'" + self.fileTypeVar.get() + "'", True)
+        optionWrite("SaveFullPath", self.saveFilenameAs.get(), True)
+        optionWrite("ResultSeparator", "'" + self.separatorVar.get() + "'", True)
+        optionWrite("ProcessWhat", "'" + self.processorOptions.processWhat.get() + "'", True)
         optionWrite("RemoveReflectionsWhere",
-                    "'" + self.processorOptions.removeReflectionsWhere.get() + "'")
-        optionWrite("DefSaveTags", self.processorOptions.saveTags.get())
-        optionWrite("DefSaveComments", self.processorOptions.saveComments.get())
-        optionWrite("DefShowResults", self.processorOptions.showResults.get())
+                    "'" + self.processorOptions.removeReflectionsWhere.get() + "'", True)
+        optionWrite("DefSaveTags", self.processorOptions.saveTags.get(), True)
+        optionWrite("DefSaveComments", self.processorOptions.saveComments.get(), True)
+        optionWrite("DefShowResults", self.processorOptions.showResults.get(), True)
         for option in self.directoryOptions:
             directory = eval("self.{}.get()".format(option[1])).rstrip("\/")
             if os.path.exists(directory):
@@ -268,11 +270,11 @@ class GeneralOptions(OptionsCM, Toplevel):
 
     def chooseCommentColor(self):
         "opens dialog for choosing color of comments and immediately saves the selected color"
-        color = colorchooser.askcolor(initialcolor = optionGet("CommentColor", "grey90", 'str'),
-                                      parent = self)
+        color = colorchooser.askcolor(initialcolor = optionGet("CommentColor", "grey90",
+                                                               'str', True), parent = self)
         if color and len(color) > 1 and color[1]:
             selected = color[1]
-            optionWrite("CommentColor", "'" +  selected + "'")
+            optionWrite("CommentColor", "'" +  selected + "'", True)
             self.root.explorer.fileFrame.tree.tag_configure("comment", background = selected)
             self.root.controller.contentTree.tag_configure("comment", background = selected)
 
@@ -286,8 +288,9 @@ class AdvancedOptions(Toplevel):
         self.grab_set()
         self.focus_set()
         self.resizable(FALSE, FALSE)
-        self.minsize(400, 300)
-        placeWindow(self, 400, 682)
+        self.minsize(410, 300)
+        height = 382 if m.mode == "OF" else 800
+        placeWindow(self, 410, height)
         self.columnconfigure(0, weight = 3)
         self.columnconfigure(1, weight = 1)
         self.columnconfigure(2, weight = 1)
@@ -297,9 +300,9 @@ class AdvancedOptions(Toplevel):
 
          
         self.okBut = ttk.Button(self, text = "Ok", command = self.okFun)
-        self.okBut.grid(column = 1, row = 1, padx = 3, pady = 2)
+        self.okBut.grid(column = 1, row = 1, padx = 3, pady = 4)
         self.cancelBut = ttk.Button(self, text = "Cancel", command = self.cancelFun)    
-        self.cancelBut.grid(column = 2, row = 1, padx = 3, pady = 2)
+        self.cancelBut.grid(column = 2, row = 1, padx = 3, pady = 4)
 
 
         self.settingsFrame = ttk.Frame(self)
@@ -309,11 +312,11 @@ class AdvancedOptions(Toplevel):
         self.optionFrames = []
         
         mapping = {"degrees": "°", "seconds": "s", "percents": "%"}
-        for name, par in m.parameters.items():
+        for name, par in sorted(m.parameters.items()):
             if not par.options:
                 continue
             options = []
-            for option in par.options.values():
+            for option in sorted(par.options.values(), key = lambda opt: opt[0].types == "bool"):
                 strings = option[1].split(" [in ")
                 if len(strings) == 2:
                     text, unit = strings

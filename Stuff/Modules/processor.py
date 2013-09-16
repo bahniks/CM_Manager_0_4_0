@@ -71,6 +71,7 @@ class Processor(ttk.Frame):
 
         # labels
         self.statusBar = ttk.Label(self, textvariable = self.status)
+        self.modeLab = ttk.Label(self, text = m.fullname[m.mode], font = ("Helvetica", "16"))
 
         
         # adding to grid
@@ -85,6 +86,7 @@ class Processor(ttk.Frame):
 
         self.statusBar.grid(column = 0, row = 7, columnspan = 3, sticky = (N, S, E, W), padx = 6,
                             pady = 3)
+        self.modeLab.grid(column = 0, row = 0)
        
         self.saveToFrame.grid(column = 1, row = 1, columnspan = 3, sticky = (N, S, E, W),
                               padx = 6, pady = 2)
@@ -274,7 +276,7 @@ class Processor(ttk.Frame):
         self._setStatusEndProgressWindow()
 
         if self.someProblem:
-            ProcessingProblemDialog(self, self.log.filename)
+            ProcessingProblemDialog(self, self.log.filename, output)
         elif self.optionFrame.showResults.get():
             os.startfile(output)   
 
@@ -744,7 +746,7 @@ class OptionFrame(ttk.Labelframe):
 
 class ProcessingProblemDialog(Toplevel):
     "showed when some problem occured during processing"
-    def __init__(self, root, logfile):
+    def __init__(self, root, logfile, results = None):
         super().__init__(root)
         
         self.root = root
@@ -763,7 +765,7 @@ class ProcessingProblemDialog(Toplevel):
         self.showBut.grid(column = 1, row = 2, pady = 2)
         self.resultsBut = ttk.Button(self, text = "Show results", command = self.resultsFun)
         self.resultsBut.grid(column = 0, row = 2, pady = 2)
-        if not os.path.exists(self.root.saveToFrame.saveToVar.get()):
+        if not results or not os.path.exists(results):
             self.resultsBut.state(["disabled"])
 
         # text

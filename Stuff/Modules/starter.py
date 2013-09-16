@@ -1,3 +1,4 @@
+#! python3
 """
 Copyright 2013 Štěpán Bahník
 
