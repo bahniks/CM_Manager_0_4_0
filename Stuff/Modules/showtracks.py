@@ -121,7 +121,8 @@ class ShowTracks(Toplevel):
         "changes size of a mouse circle used for reflection removal"
         if self.enabledManualReflectionsRemoval:
             if event.num == 5 or event.delta == - 120:
-                self.size -= 1
+                if self.size > 2:
+                    self.size -= 1
             elif event.num == 4 or event.delta == 120:
                 self.size += 1
 
@@ -389,8 +390,8 @@ class FileTree(ttk.Frame):
     
         self.timeFrame = TimeFrame(self.timeLabFrame, onChange = True, observe = False)
         self.timeFrame.grid(column = 0, row = 0)
-        self.timeFrame.timeVar.set(TimeFrame.stop)
-        self.timeFrame.startTimeVar.set(TimeFrame.start)
+        self.timeFrame.timeVar.set(TimeFrame.stop[m.mode])
+        self.timeFrame.startTimeVar.set(TimeFrame.start[m.mode])
 
         # remove reflections checkbutton
         self.removeReflectionsVar = BooleanVar()

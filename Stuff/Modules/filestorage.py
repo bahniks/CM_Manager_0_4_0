@@ -104,9 +104,9 @@ class FileStorage:
             self.reflections[file].update(points)
         else:
             if file in self.pairedfiles:
-                cm = m.CL(file, nameR = self.pairedfiles[file])
+                cm = m.CL(file, self.pairedfiles[file])
             else:
-                cm = m.CL(file, nameR = "auto")
+                cm = m.CL(file, "auto")
             reflections = cm.findReflections(results = "indices")
             self.reflections[file] = set(reflections[0]) | set(reflections[1]) | points
 
@@ -657,6 +657,8 @@ class FileStorageFrame(ttk.Frame):
             if files[file]:
                 arenafile = file
                 roomfile = files[file]
+            elif m.files == "one":
+                arenafile = file
             else:
                 arenafile = file
                 if "Arena" in basename(arenafile):
@@ -667,7 +669,7 @@ class FileStorageFrame(ttk.Frame):
                     roomfile = os.path.join(splitName[0], splitName[1].replace("arena", "room"))  
             # sorting existing and non-existing files
             if os.path.isfile(arenafile):
-                if os.path.isfile(roomfile):
+                if m.files == "one" or os.path.isfile(roomfile):
                     arenafiles.append(arenafile)
                     if arenafile in toTag:
                         self.fileStorage.tag(arenafile)
@@ -686,7 +688,7 @@ class FileStorageFrame(ttk.Frame):
                 else:
                     wrongfiles.append(arenafile)
             else:
-                if os.path.isfile(roomfile):
+                if m.files == "pair" and os.path.isfile(roomfile):
                     wrongfiles.append(roomfile)
 
         if not (wrongfiles or arenafiles):

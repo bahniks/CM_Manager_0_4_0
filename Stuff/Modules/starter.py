@@ -91,10 +91,10 @@ class GUI(Tk):
     def closeFun(self):
         "ask for saving files on exit"
         if doesFileStorageRequiresSave(self, m.mode):
-            self.askForSave(m.mode)
+            self._askForSave(m.mode)
         for mode in m.fs:
             if mode != m.mode and doesFileStorageRequiresSave(self, mode):
-                self.askForSave(mode)
+                self._askForSave(mode)
         self.destroy()
 
 
