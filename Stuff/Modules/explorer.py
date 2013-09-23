@@ -31,7 +31,8 @@ from commonframes import TimeFrame, returnName
 from image import SVG
 from processor import ProgressWindow
 from optionget import optionGet
-from graphs import getGraphTypes, Graphs, SvgGraph, SpeedGraph, DistanceFromCenterGraph, AngleGraph
+from graphs import getGraphTypes, Graphs, SvgGraph, SpeedGraph, DistanceFromCenterGraph
+from graphs import AngleGraph, DistanceFromPlatformGraph
 from comment import Comment, commentColor
 import mode as m
 
@@ -691,6 +692,8 @@ class Explorer(ttk.Frame):
             if len(comment) > 150:
                 comment = comment[:149] + "(...)"
             self.status.set(comment)
+        else:
+            self.status.set("")
         
         if new and timeReset:
             self.curTime.set(0)
@@ -909,7 +912,7 @@ class Explorer(ttk.Frame):
     def parametersPopUp(self, event):
         "shows menu for selection of parameters to be shown in parameters frame"      
         menu = Menu(self, tearoff = 0)
-        notAvailable = ["Total distance", "Entrances", "Time in sectors"]
+        notAvailable = ["Total distance", "Entrances", "Time in sectors", "Time in quadrants"]
         menu.add_radiobutton(label = "Don't show anything",
                              variable = self.selectedParameter, value = "nothing",
                              command = self._changedSelectedParameter)

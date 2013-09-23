@@ -18,6 +18,7 @@ along with Carousel Maze Manager.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from collections import deque, OrderedDict
+from math import degrees
 
 
 from cm import CM
@@ -71,6 +72,68 @@ class OF(SF, CM):
                    min([line[2]-lb, rb-line[2], line[3]-bb, tb-line[3]]) < distance]  
 
         return sum(outside)
+
+
+    def getThigmotaxis(self, time = 20, startTime = 0, percentSize = 20):
+        time *= 60000
+        start = self.findStart(startTime)
+        if type(percentSize) != list:
+            percentSize = [percentSize]
+
+        results = []
+        for width in percentSize:
+            centerArea = (1 - width/100) * self.radius
+            x0, x1 = self.centerX - centerArea, self.centerX + centerArea
+            y0, y1 = self.centerY - centerArea, self.centerY + centerArea
+            center = 0
+            periphery = 0
+            for content in self.data[start:]:
+                if x0 < content[2] < x1 and y0 < content[3] < y1 and content[1] <= time:
+                    center += 1                       
+                elif content[1] <= time:
+                    periphery += 1                       
+                else:
+                    break
+
+            results.append(format(periphery / (center + periphery), "0.3f"))
+                            
+        if len(results) == 1:
+            return results[0]
+        else:
+            return "|".join(results)          
+
+
+    def getMeanDistanceFromSide(self, time = 20, startTime = 0):
+        time *= 60000
+        start = self.findStart(startTime)
+
+        Cx, Cy = self.centerX, self.centerY        
+        r = self.radius
+        lb, tb, rb, bb = Cx - r, Cy + r, Cx + r, Cy - r
+
+        dists = [max((min((line[2]-lb, rb-line[2], line[3]-bb, tb-line[3])), 0)) for line in
+                 self.data[start:] if line[1] <= time]
+
+        result = (sum(dists) / len(dists)) / self.trackerResolution
+        
+        return format(result, "0.2f")
+
+
+    def getTimeInQuadrants(self, time = 20, startTime = 0, corner = True):
+        time *= 60000
+        start = self.findStart(startTime)
+        sectorCenterAngle = 0 if not corner else 45
+  
+        angles = [0] * 4
+        for content in self.data[start:]:
+            if content[1] <= time:
+                angle = (degrees(self._angle(content[2], content[3])) -
+                         sectorCenterAngle + 405) % 360
+                angles[int(angle // 90)] += 1
+
+        boxes = [format((box / sum(angles)), "0.3f") for box in angles]
+
+        return ("|".join(boxes))
 
   
     def _removalCondition(self, row, i, before, reflection):

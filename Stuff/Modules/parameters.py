@@ -177,17 +177,23 @@ class ParametersOF(OrderedDict):
     def __init__(self):
         super().__init__()
         of = {"Total distance",
-              "Thigmotaxis", # ta bude potreba zmenit
+              "Thigmotaxis",
               "Directional mean",
               "Circular variance",
               "Maximum time of immobility",
               "Proportion of time moving",
               "Mean distance from center",
               "Real minimum time",
-              "Real maximum time"} # pridat time in quadrants, vzdalenost od steny
+              "Real maximum time"}
         for name, parameter in ParametersCM().items():
             if name in of:
                 self[name] = parameter
+                
+        self["Time in quadrants"] = Par("getTimeInQuadrants", "advanced", {
+            "corner": (Opt('CornerQuadrants', True, 'bool'),
+                       "Corner quadrants (otherwise edge)")
+            })
+        self["Mean distance from side"] = Par("getMeanDistanceFromSide", "basic", {})
 
 
 

@@ -162,7 +162,10 @@ class CM:
                         break
                     else:
                         i += 1
-                before = self.data[-i][2:4]
+                        if count + 1 == i:
+                            break
+                if count + 1 != i:
+                    before = self.data[-i][2:4]
                 prev = self.data[-2]
                 number = line[0] - count
                 for row in range(1, number):
@@ -171,7 +174,7 @@ class CM:
                     missing.append(count)
                     self.interpolated.add(count)
                     self.data.insert(-1, filling)
-                    count += 1
+                    count += 1                       
                                      
             # wrong points
             if (line[2] != 0 or line[3] != 0) and missing == []:
@@ -202,6 +205,7 @@ class CM:
             for missLines in missing:
                 self.data[missLines][2:4] = before
 
+
     def _processArenaFile(self, infile):
         for line in infile:
             if line.count("END_HEADER") > 0:
@@ -226,7 +230,10 @@ class CM:
                         break
                     else:
                         i += 1
-                before = self.data[count - i][7:9]
+                        if count + 1 == i:
+                            break
+                if count + 1 != i:
+                    before = self.data[count - i][7:9]
                 prev = self.data[count - 2][9:]
                 number = line[0] - count
                 for row in range(1, number):

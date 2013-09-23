@@ -108,7 +108,7 @@ class MWM(SF, CM):
 
 
     def getAvgDistance(self, time = 1, startTime = 0, x = "platform", y = "platform",
-                       removeBeginning = False, skip = 25, minDifference = 0):
+                       removeBeginning = False, skip = 1, minDifference = 0):
 
         time *= 60000 # conversion from minutes to miliseconds
         start = self.findStart(startTime)
@@ -117,13 +117,24 @@ class MWM(SF, CM):
         y = self.platformY if y == "platform" else y
 
         if removeBeginning:
-            distance = self.getDistance(skip = skip, time = time / 60000, startTime = startTime,
-                                        minDifference = minDifference)
-            t = min([time, self.data[-1][1]])
-            speed = distance * self.trackerResolution * 100 / t # pixels / ms
+            T1 = 0
+            for content in self.data[start:]:
+                if not 0 < content[5] < 3:
+                    continue
+                else:
+                    T1 = content[1] - startTime
+                    break
+            if T1 == 0 or T1 > time - startTime:
+                T1 = min(time, self.data[-1][1]) - startTime
+            beginning = self.realMinimumTime() / 60000 # min
+            t = min([time, T1]) # ms
+            distance = self.getDistance(skip = skip, time = t / 60000, startTime = beginning,
+                                        minDifference = minDifference) # m
+            speed = float(distance) * self.trackerResolution * 100 / (t - beginning*60000) # pix/ms
             distanceToTarget = sqrt((self.data[0][2] - x)**2 + (self.data[0][3] - y)**2)
-            timeToReachTarget = distanceToTarget / (speed * 60000) # in minutes
-            start = self.findStart(max([timeToReachTarget, startTime]))
+            distanceToTarget -=  self.platformRadius # pix
+            timeToReachTarget = distanceToTarget / (speed * 60000) # min
+            start = self.findStart(max([timeToReachTarget + beginning, startTime]))
             
         sumDistance = 0
         
@@ -133,13 +144,20 @@ class MWM(SF, CM):
             currentDistance = sqrt((content[2] - x)**2 + (content[3] - y)**2) - self.platformRadius
             if currentDistance > 0:
                 sumDistance += currentDistance
+                
+        if not self.data[start:]:
+            return "NA"
+        
         averageDistance = sumDistance / (content[0] - start)       
         averageDistance /= self.trackerResolution # conversion to centimetres
-
+        
         return format(averageDistance, "0.2f")
 
 
     def getAvgDistanceChosen(self, time = 1, startTime = 0, angle = 180, **kwargs):
+        if isinstance(angle, list):
+            results = [self.getAvgDistanceChosen(time, startTime, a, **kwargs) for a in angle]
+            return "|".join(results)
         angle += self.centerAngle
         angle = radians(angle)        
         dist = sqrt((self.centerX - self.platformX)**2 + (self.centerY - self.platformY)**2)
@@ -148,7 +166,8 @@ class MWM(SF, CM):
         return self.getAvgDistance(time = time, startTime = startTime, x = x, y = y, **kwargs)
         
 
-
+    def getCenterAngle(self, **_):
+        return format(self.centerAngle, "0.1f")
 
    
     def _removalCondition(self, row, i, before, reflection):

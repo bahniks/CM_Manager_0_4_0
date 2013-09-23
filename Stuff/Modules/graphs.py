@@ -31,6 +31,10 @@ def getGraphTypes():
              ["Distance from center", "DistanceFromCenterGraph(self)"],
              ["Speed", "SpeedGraph(self)"]             
              ]
+    if m.mode == "OF":
+        types[1] = ["Proximity to side", "DistanceFromCenterGraph(self)"]
+    elif m.mode == "MWM":
+        types.insert(2, ["Distance from platform", "DistanceFromPlatformGraph(self)"])
     return types
 
 
@@ -368,9 +372,7 @@ class DistanceFromCenterGraph(Graphs, SvgGraph):
             r = self.radius
             lb, tb, rb, bb = Cx - r, Cy + r, Cx + r, Cy - r 
             dists = [r - min([line[2]-lb, rb-line[2], line[3]-bb, tb-line[3]]) for line in
-                     cm.data[start:] if line[1] <= self.maxTime]            
-        self.points = [(sum(dists[(i * smooth):((i * smooth) + smooth)]) / smooth) for i
-                       in range(len(dists) // smooth)]       
+                     cm.data[start:] if line[1] <= self.maxTime]                
 
         self.maxY = self.radius + 10
         
@@ -386,6 +388,50 @@ class DistanceFromCenterGraph(Graphs, SvgGraph):
 
         self.drawGraph(maxY = self.maxY, valueList = self.points)
       
+
+class DistanceFromPlatformGraph(Graphs, SvgGraph):
+    "graph depicting distance from platform during the MWM session"
+    def __init__(self, parent, cm = None, purpose = "graph"):
+        if purpose == "graph":
+            Graphs.__init__(self, parent)
+        else:
+            SvgGraph.__init__(self, parent, cm)
+
+
+    def writeFurtherText(self):
+        "makes text for svg file containing info about line representing border of the platform"
+        self.furtherText = '<line stroke="gray" stroke-width="0.5" x1="0" ' +\
+                           'y1="{0}" x2="600" y2="{0}"/>\n'.format(self.platformRadius)
+
+
+    def compute(self, cm, smooth = 10):
+        """computes distances from center of the graph
+           parameter smooth controls how many data points should be averaged
+        """
+        start = cm.findStart(self.minTime / 60000)
+
+        Cx, Cy = cm.centerX, cm.centerY
+        Px, Py = cm.platformX, cm.platformY
+        self.platformRadius = cm.platformRadius
+           
+        self.points = [((line[2] - Px)**2 + (line[3] - Py)**2)**0.5 for line in cm.data[start:] if
+                       line[1] <= self.maxTime]
+
+        self.maxY = cm.radius + ((Px - Cx)**2 + (Py - Cy)**2)**0.5
+        
+
+    def CM_loaded(self, cm, initTime = 0, minTime = 0, maxTime = "max"):
+        """creates graph when CM file is loaded
+           parameter initTime is the time of the player when the graph is initialized
+        """
+        super().CM_loaded(cm, minTime, maxTime, initTime)
+        self.compute(cm)
+
+        y = self.height * (1 - self.platformRadius/self.maxY)
+        self.create_line((0, y, self.width, y), fill = "grey")
+
+        self.drawGraph(maxY = self.maxY, valueList = self.points)
+
 
 
 class AngleGraph(Graphs, SvgGraph):
