@@ -156,7 +156,7 @@ class CM:
            
             # missing points
             if count + 1 != line[0]:
-                i = 2
+                i = 1
                 while True:
                     if self.data[-i][2] or self.data[-i][3]:
                         break
@@ -369,8 +369,9 @@ class CM:
         argument 'lastTime' decides whether the last time point is obtained from 'time' parameter
             or data
         """
-        time = time * 60000 # conversion from minutes to miliseconds
         start = self.findStart(startTime)
+        time *= 60000 # conversion from minutes to miliseconds
+        startTime *= 60000
         T1 = 0
         for content in self.data[start:]:
             if content[5] != 2:
@@ -568,7 +569,7 @@ class CM:
             minSpeed argument is in cm/s, smooth and skip are represented in data points"""
         time = time * 60000
         start = self.findStart(startTime)
-        t0 = startTime
+        t0 = startTime * 60000
         x0, y0 = self.data[start][self.indices]
         speeds = deque()
 
@@ -668,7 +669,7 @@ class CM:
             minSpeed argument is in cm/s, smooth and skip are represented in data points"""
         time = time * 60000
         start = self.findStart(startTime)
-        t0 = startTime
+        t0 = startTime * 60000
         x0, y0 = self.data[start][self.indices]
         speeds = deque()
 
