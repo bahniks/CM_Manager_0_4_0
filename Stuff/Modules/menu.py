@@ -73,12 +73,9 @@ class MenuCM(Menu):
         self.menu_options.add_command(label = "General options", command = self.generalOptions)
         self.menu_options.add_separator()
         self.menu_options.add_command(label = "Reset all options", command = self.resetOptions)
-        self.menu_task.add_radiobutton(label = "Carousel Maze", variable = self.task, value = "CM",
-                                       command = self.changedTask)
-        self.menu_task.add_radiobutton(label = "Morris Watter Maze", variable = self.task,
-                                       value = "MWM", command = self.changedTask)
-        self.menu_task.add_radiobutton(label = "Open Field", variable = self.task, value = "OF",
-                                       command = self.changedTask)
+        for task, name in m.fullname.items():
+            self.menu_task.add_radiobutton(label = name, variable = self.task, value = task,
+                                           command = self.changedTask)
         self.menu_help.add_command(label = "About", command = self.about)
         self.menu_help.add_command(label = "Citation", command = self.citation)
         self.menu_help.add_separator()

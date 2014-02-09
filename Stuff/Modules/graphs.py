@@ -375,6 +375,7 @@ class DistanceFromCenterGraph(Graphs, SvgGraph):
                      cm.data[start:] if line[1] <= self.maxTime]                
 
         self.maxY = self.radius + 10
+        self.points = dists
         
 
     def CM_loaded(self, cm, initTime = 0, minTime = 0, maxTime = "max"):

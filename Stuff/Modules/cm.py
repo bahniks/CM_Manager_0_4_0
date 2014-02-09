@@ -626,7 +626,7 @@ class CM:
             
         for minT in minTime:
             t0 = startTime * 60000
-            x0, y0 = self.data[start][7:9]
+            x0, y0 = self.data[start][self.indices]
             minT *= 1000
             speeds = deque()
         
@@ -635,7 +635,7 @@ class CM:
             for content in self.data[start+skip::skip]:
                 if content[1] > time:
                     break
-                x1, y1 = content[7:9]
+                x1, y1 = content[self.indices]
                 t1 = content[1]
                 speeds.append((sqrt(((x1 - x0)**2 + (y1 - y0)**2)) / self.trackerResolution) /
                               ((t1 - t0) / 1000))
@@ -731,10 +731,10 @@ class CM:
         angles = []
         cx, cy = self.centerX, self.centerY
         for shock in selected:
-            x1, y1 = self.data[shock][7:9]
+            x1, y1 = self.data[shock][self.indices]
             if len(self.data) <= shock + after:
                 break
-            x2, y2 = self.data[shock + after][7:9]
+            x2, y2 = self.data[shock + after][self.indices]
             angle = ((degrees(atan2(x2 - cx, y2 - cy + 0.0000001)) -
                       degrees(atan2(x1 - cx, y1 - cy + 0.0000001)) + 180) % 360) - 180
             angles.append(angle)

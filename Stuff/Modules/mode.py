@@ -17,13 +17,14 @@ You should have received a copy of the GNU General Public License
 along with Carousel Maze Manager.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 
 
 from cm import CM
 from mwm import MWM
 from of import OF
-from parameters import ParametersCM, ParametersMWM, ParametersOF
+from cmsf import CMSF
+from parameters import ParametersCM, ParametersMWM, ParametersOF, ParametersCMSF
 
 
 mode = None
@@ -40,15 +41,20 @@ Slaves = namedtuple("Slaves", ["processor", "explorer", "controller"])
 
 dispatch = {"CM": Task(CM, "pair", ParametersCM()),
             "MWM": Task(MWM, "one", ParametersMWM()),
-            "OF": Task(OF, "one", ParametersOF())}
+            "OF": Task(OF, "one", ParametersOF()),
+            "CMSF": Task(CMSF, "one", ParametersCMSF())}
 
-fullname = {"CM": "Carousel maze",
-            "MWM": "Morris watter maze",
-            "OF": "Open field"}
+fullname = OrderedDict()
+fullname["CM"] = "Carousel maze"
+fullname["CMSF"] = "Carousel maze (single frame)"
+fullname["MWM"] = "Morris watter maze"
+fullname["OF"] = "Open field"
+
 
 time = {"CM": 20,
         "MWM": 1,
-        "OF": 10}
+        "OF": 10,
+        "CMSF": 20}
 
 
 def changeMode(newMode):

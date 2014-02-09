@@ -197,6 +197,14 @@ class ParametersOF(OrderedDict):
 
 
 
+class ParametersCMSF(OrderedDict):
+    def __init__(self):
+        super().__init__()
+        for name, parameter in ParametersCM().items():
+            if name not in ("Room frame filename",):
+                self[name] = parameter
+
+
 
 
 

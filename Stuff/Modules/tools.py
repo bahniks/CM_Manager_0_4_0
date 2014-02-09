@@ -164,8 +164,14 @@ class SetBatchTime(Toplevel):
 
     def addFun(self):
         "adds selected time to the text widget as well as to the selected batch time"
-        start = int(self.timeFrame.startTimeVar.get())
-        end = int(self.timeFrame.timeVar.get())
+        try:
+            start = int(self.timeFrame.startTimeVar.get())
+        except ValueError:
+            start = float(self.timeFrame.startTimeVar.get())
+        try:
+            end = int(self.timeFrame.timeVar.get())
+        except ValueError:
+            end = float(self.timeFrame.timeVar.get())     
         newTime = (start, end)
         self.batchTime.append(newTime)
         self._updateText()
