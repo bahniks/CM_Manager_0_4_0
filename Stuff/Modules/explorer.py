@@ -22,6 +22,7 @@ from tkinter import ttk
 from time import time
 from math import cos, sin, radians, degrees, atan2, floor
 
+
 import os
 import os.path
 
@@ -58,6 +59,7 @@ class Explorer(ttk.Frame):
         self.entrancesVar = StringVar()
         self.selectedPVar = StringVar()
         self.selectedParameter = StringVar()
+        self.graphParameter = StringVar()
         self.timeVar = StringVar()
         self.totDistanceVar = StringVar()
         self.totEntrancesVar = StringVar()
@@ -441,9 +443,6 @@ class Explorer(ttk.Frame):
         self.timeFrame.changeState("disabled")
         self.showTrack["state"] = "disabled"
         self.saveBut.state(["disabled"])
-
-        if self.animate == "stop":
-            self.changedTime(0)
             
         self.animate = "" # status of the animation - '', 'pause', 'stop'
         
@@ -889,20 +888,18 @@ class Explorer(ttk.Frame):
             return
         
         menu = Menu(self, tearoff = 0)
-        menu.add_command(label = "Show periodicity",
-                         command = lambda: self.graph.drawParameter(self.cm, "periodicity"))
-        menu.add_command(label = "Show mobility",
-                         command = lambda: self.graph.drawParameter(self.cm, "mobility"))
-        menu.add_command(label = "Show immobility",
-                         command = lambda: self.graph.drawParameter(self.cm, "immobility"))
-        menu.add_command(label = "Show entrances",
-                         command = lambda: self.graph.drawParameter(self.cm, "entrances"))
-        menu.add_command(label = "Show shocks",
-                         command = lambda: self.graph.drawParameter(self.cm, "shocks"))
-        menu.add_command(label = "Show bad points",
-                         command = lambda: self.graph.drawParameter(self.cm, "bad points"))
-        menu.add_command(label = "Show thigmotaxis",
-                         command = lambda: self.graph.drawParameter(self.cm, "thigmotaxis"))
+        parameters = {"CM": ("periodicity", "mobility", "immobility", "entrances", "shocks",
+                             "bad points", "thigmotaxis"),
+                      "MWM": ("mobility", "immobility", "bad points", "thigmotaxis", "passes"),
+                      "OF": ("mobility", "immobility", "bad points", "thigmotaxis")}
+        parameters["CMSF"] = parameters["CM"]
+
+        for parameter in parameters[m.mode]:
+            menu.add_radiobutton(label = "Show {}".format(parameter),
+                                 variable = self.graphParameter, value = parameter,
+                                 command = lambda: self.graph.drawParameter(
+                                     self.cm, self.graphParameter.get()))
+        
         menu.add_separator()
         menu.add_command(label = "Don't show anything",
                          command = lambda: self.graph.drawParameter(self.cm, None))

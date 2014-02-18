@@ -131,10 +131,11 @@ def main():
     import os
     import os.path
     svg = SVG(300, 300)
-    cm = CM(os.path.join(os.getcwd(), "TestingFiles", "14rNO465_Arena.dat"))
-    svg.drawAAPA(cm, "room", scale = 3, boundary = True, sector = True, shocks = True)
-    svg.save("test.svg")
-    os.startfile("test.svg")
+    cm = CM(os.path.join(os.getcwd(), "TestingFiles", "09aNO465_Arena.dat"))
+    svg.drawAAPA(cm, "room", boundary = True, sector = True, shocks = True)
+    output = os.path.join(os.getcwd(), "TestingFiles", "test.svg") 
+    svg.save(output)
+    os.startfile(output)
 
 
 

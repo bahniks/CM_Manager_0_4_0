@@ -242,8 +242,12 @@ class CM:
                     self.interpolated.add(count)
                     self.data[count] += filling
                     count += 1
-          
-            self.data[count] += line[2:]        
+
+            try:          
+                self.data[count] += line[2:]
+            # in case of different lengths of arena and room frame files
+            except IndexError:
+                break 
             
             # wrong points
             if (line[2] != 0 or line[3] != 0) and missing == []:
@@ -270,6 +274,10 @@ class CM:
                                                   * missCounter + before[1]
                 missing = []
 
+        # in case of different lengths of arena and room frame files
+        if count != len(self.data) - 1:
+            self.data = self.data[:count]
+        
         if missing != []:
             for missLines in missing:
                 self.data[missLines][7:9] = before

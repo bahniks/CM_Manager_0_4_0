@@ -1,7 +1,7 @@
 #! python3
 """
 Carousel Maze Manager - a program for analysis of data from behavioral neuroscience tasks
-Copyright 2013 Štěpán Bahník
+Copyright 2013, 2014 Štěpán Bahník
 
 This file is part of Carousel Maze Manager.
 

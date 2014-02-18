@@ -757,6 +757,8 @@ class FileStorageFrame(ttk.Frame):
             initial = FileStorageFrame.lastOpenedDirectory[m.mode]
         else:
             initial = optionGet("FileDirectory", os.getcwd(), "str")
+        # tkinter has a problem with unicode characters in intialdir
+        # (only here, not in askopenfilenames dialog)
         selected = askdirectory(initialdir = initial)
         if os.path.isdir(selected):
             FileStorageFrame.lastOpenedDirectory[m.mode] = selected

@@ -790,4 +790,4 @@ class ProcessingProblemDialog(Toplevel):
 
     def resultsFun(self):
         "opens a file with results"
-        os.startfile(self.root.saveToFrame.saveToVar.get())
+        os.startfile(self.root.log.saveTo)

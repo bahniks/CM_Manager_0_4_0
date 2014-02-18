@@ -117,6 +117,7 @@ class MWM(SF, CM):
         y = self.platformY if y == "platform" else y
 
         if removeBeginning:
+            # pravdepodobne muze pouzivat time to first pass
             T1 = 0
             for content in self.data[start:]:
                 if not 0 < content[5] < 3:

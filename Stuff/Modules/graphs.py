@@ -119,7 +119,7 @@ class Graphs(Canvas):
 
 
     def drawParameter(self, cm, parameter):
-        "computes selected parameter to be drawn on top of the graph" 
+        "computes selected parameter to be drawn on top of the graph"
         if self.drawnParameter:
             self.delete("parameter")
 
@@ -163,16 +163,22 @@ class Graphs(Canvas):
             self.drawPeriods(mobility)
         elif parameter == "thigmotaxis":
             percentSize = optionGet("ThigmotaxisPercentSize", 20, ["int", "float"])
-            border = cm.radius * (1 - (percentSize / 100))
             start = cm.findStart(self.minTime / 60000)
             periods = []
             outside = False
             t0 = self.minTime
+            border = cm.radius * (1 - (percentSize / 100))           
+            if m.mode == "OF":
+                x0, x1 = cm.radius - cm.centerX, cm.centerX + cm.radius
+                y0, y1 = cm.radius - cm.centerY, cm.centerY + cm.radius
+                def distance(line):
+                    return cm.radius - min([line[2] - x0, x1 - line[2], line[3] - y0, y1 - line[3]])
+            else:
+                def distance(line):
+                    return ((line[2] - cm.centerX)**2 + (line[3] - cm.centerY)**2)**0.5
             for content in cm.data[start:]:
                 if content[1] <= self.maxTime: 
-                    distance = ((content[2] - cm.centerX)**2 +\
-                                (content[3] - cm.centerY)**2)**0.5
-                    if distance >= border:
+                    if distance(content) >= border:
                         if not outside:
                             t0 = content[1]
                         outside = True
@@ -214,6 +220,21 @@ class Graphs(Canvas):
                     entrances.append(content[1])
                     prev = 2
             self.drawTimes(entrances)
+        elif parameter == "passes":
+            passes = []
+            prev = 0
+            for content in cm.data:
+                if content[5] == 0 and prev != 2:
+                    continue
+                elif content[5] == 0 and prev == 2:
+                    if content[5] == 0: 
+                        prev = 0
+                elif content[5] > 0 and content[5] != 5 and prev == 2:
+                    continue
+                elif content[5] > 0 and content[5] != 5 and prev != 2:
+                    passes.append(content[1])
+                    prev = 2
+            self.drawTimes(passes)
         elif parameter == "bad points":
             if cm.interpolated:
                 sortd = sorted(cm.interpolated)
@@ -484,7 +505,7 @@ class AngleGraph(Graphs, SvgGraph):
         self.compute(cm)
 
         # drawing lines representing the sector
-        if m.mode == "CM":
+        if "CM" in m.mode:
             wid = cm.width   
             y1 = ((360 - (wid / 2)) / 360) * self.height
             y2 = ((wid / 2) / 360) * self.height
