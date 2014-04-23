@@ -40,8 +40,10 @@ def recognizeFiles(filenames):
         first = filenames.popleft()
         name = os.path.basename(first)
         splitName = os.path.split(first)
-        if "Arena" in name or "arena" in name:
-            base = splitName[1].replace("Arena", "Room").replace("arena", "room")
+        if m.pairing[m.mode][0] in name or m.pairing[m.mode][0].lower() in name:
+            base = splitName[1].replace(m.pairing[m.mode][0],
+                                        m.pairing[m.mode][1]).replace(m.pairing[m.mode][0].lower(),
+                                                                      m.pairing[m.mode][1].lower())
             roomName = os.path.join(splitName[0], base)
             if roomName in filenames:
                 arenaFiles.append(first)             
@@ -50,8 +52,10 @@ def recognizeFiles(filenames):
                 arenaFiles.append(first)  
             else:
                 nonmatchingFiles.append(first)
-        elif "Room" in name or "room" in name:
-            base = splitName[1].replace("Room", "Arena").replace("room", "arena")
+        elif m.pairing[m.mode][1] in name or m.pairing[m.mode][1].lower() in name:
+            base = splitName[1].replace(m.pairing[m.mode][1],
+                                        m.pairing[m.mode][0]).replace(m.pairing[m.mode][1].lower(),
+                                                                      m.pairing[m.mode][0].lower())
             arenaName = os.path.join(splitName[0], base)
             if arenaName in filenames:
                 arenaFiles.append(arenaName)

@@ -17,11 +17,16 @@ You should have received a copy of the GNU General Public License
 along with Carousel Maze Manager.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+from collections import OrderedDict
+
+
 from cm import CM
 from singleframe import SF
 
 
 class CMSF(SF, CM):
+    cache = OrderedDict()
+
     def __init__(self, nameA, *_):
 
         self.nameA = nameA

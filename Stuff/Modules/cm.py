@@ -95,40 +95,40 @@ class CM:
 
     def _processHeader(self, file):
         for line in file:
-            if line.count("TrackerVersion") > 0:
+            if "TrackerVersion" in line:
                 if "iTrack" in line:
                     self.tracker = "iTrack"
                 elif "Tracker" in line:
                     self.tracker = "Tracker"
                 else:
                     self.tracker = "Unknown"
-            elif line.count("ArenaCenterXY") > 0:
+            elif "ArenaCenterXY" in line:
                 strg = line.split()
                 for i in range(len(strg)):
                     if strg[i] == "(":
                         pos = i
                 self.centerX = eval(strg[pos+1])      
                 self.centerY = eval(strg[pos+2])
-            elif line.count("TrackerResolution_PixPerCM") > 0:
+            elif "TrackerResolution_PixPerCM" in line:
                 strg = line.split()
                 for i in range(len(strg)):
                     if strg[i] == "(":
                         pos = i
                 self.trackerResolution = eval(strg[pos+1])  
-            elif line.count("%ReinforcedSector") > 0 and line.count("//") == 0:
+            elif "%ReinforcedSector" in line and "//" not in line:
                 # needs to be updated for double avoidance
                 strg = line.split()
                 for i in range(len(strg)):
                     if strg[i] == "(":
                         pos = i
                 self._addReinforcedSector(strg, pos)
-            elif line.count("ArenaDiameter") > 0:
+            elif "ArenaDiameter" in line:
                 strg = line.split()
                 for i in range(len(strg)):
                     if strg[i] == "(":
                         pos = i
                 self.arenaDiameter = eval(strg[pos+1])
-            elif line.count("END_HEADER") > 0:
+            elif "END_HEADER" in line:
                 break
             
         self.radius = max([self.centerX, self.centerY]) 
@@ -147,7 +147,7 @@ class CM:
         count = -1
         for line in infile:
             try:
-                line = list(map(int, line.split()[:endsplit]))
+                line = list(map(float, line.split()[:endsplit])) # zmenit na int??? float je pro RA
                 self.data.append(line)
             except Exception:
                 continue
@@ -216,7 +216,7 @@ class CM:
         count = -1
         for line in infile:
             try:
-                line = list(map(int, line.split()[:7]))
+                line = list(map(float, line.split()[:7])) # zmenit na int??? float je pro RA
             except Exception:
                 continue
 

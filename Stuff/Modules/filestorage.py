@@ -136,14 +136,14 @@ class FileStorage:
 
     def pairFiles(self, files):
         "checks pairing of files and puts pairs in arenafiles and pairedfiles"
-        if ("arena" in files[0] or "Arena" in files[0]) and\
-           ("room" in files[1] or "Room" in files[1]):
+        if (m.pairing[m.mode][0].lower() in files[0] or m.pairing[m.mode][0] in files[0]) and\
+           (m.pairing[m.mode][1].lower() in files[1] or m.pairing[m.mode][1] in files[1]):
             self.pairedfiles[files[0]] = files[1]
             self.wrongfiles.remove(files[0])
             self.wrongfiles.remove(files[1])
             self.arenafiles.append(files[0])
-        elif ("arena" in files[1] or "Arena" in files[1]) and\
-             ("room" in files[0] or "Room" in files[0]):
+        elif (m.pairing[m.mode][0].lower() in files[1] or m.pairing[m.mode][0] in files[1]) and\
+             (m.pairing[m.mode][1].lower() in files[0] or m.pairing[m.mode][1] in files[0]):
             self.pairedfiles[files[1]] = files[0]            
             self.wrongfiles.remove(files[0])
             self.wrongfiles.remove(files[1])
@@ -661,12 +661,15 @@ class FileStorageFrame(ttk.Frame):
                 arenafile = file
             else:
                 arenafile = file
-                if "Arena" in basename(arenafile):
+                if m.pairing[m.mode][0] in basename(arenafile):
                     splitName = os.path.split(arenafile)
-                    roomfile = os.path.join(splitName[0], splitName[1].replace("Arena", "Room"))                    
-                elif "arena" in basename(arenafile):
+                    roomfile = os.path.join(splitName[0], splitName[1].replace(m.pairing[m.mode][0],
+                                                                               m.pairing[m.mode][1]))                    
+                elif m.pairing[m.mode][0].lower() in basename(arenafile):
                     splitName = os.path.split(arenafile)
-                    roomfile = os.path.join(splitName[0], splitName[1].replace("arena", "room"))  
+                    roomfile = os.path.join(splitName[0],
+                                            splitName[1].replace(m.pairing[m.mode][0].lower(),
+                                                                 m.pairing[m.mode][1].lower()))  
             # sorting existing and non-existing files
             if os.path.isfile(arenafile):
                 if m.files == "one" or os.path.isfile(roomfile):

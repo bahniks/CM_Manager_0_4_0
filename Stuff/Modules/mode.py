@@ -24,7 +24,8 @@ from cm import CM
 from mwm import MWM
 from of import OF
 from cmsf import CMSF
-from parameters import ParametersCM, ParametersMWM, ParametersOF, ParametersCMSF
+from ra import RA
+from parameters import ParametersCM, ParametersMWM, ParametersOF, ParametersCMSF, ParametersRA
 
 
 mode = None
@@ -42,19 +43,24 @@ Slaves = namedtuple("Slaves", ["processor", "explorer", "controller"])
 dispatch = {"CM": Task(CM, "pair", ParametersCM()),
             "MWM": Task(MWM, "one", ParametersMWM()),
             "OF": Task(OF, "one", ParametersOF()),
-            "CMSF": Task(CMSF, "one", ParametersCMSF())}
+            "CMSF": Task(CMSF, "one", ParametersCMSF()),
+            "RA": Task(RA, "pair", ParametersRA())}
 
 fullname = OrderedDict()
 fullname["CM"] = "Carousel maze"
 fullname["CMSF"] = "Carousel maze (single frame)"
 fullname["MWM"] = "Morris watter maze"
 fullname["OF"] = "Open field"
+fullname["RA"] = "Robot avoidance"
 
+pairing = {"CM": ("Arena", "Room"),
+           "RA": ("Rat", "Rob")} # zmenit pokud se bude menit pojmenovani !!!
 
 time = {"CM": 20,
         "MWM": 1,
         "OF": 10,
-        "CMSF": 20}
+        "CMSF": 20,
+        "RA": 20} # zkontrolovat
 
 
 def changeMode(newMode):

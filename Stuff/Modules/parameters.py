@@ -206,7 +206,13 @@ class ParametersCMSF(OrderedDict):
 
 
 
-
+class ParametersRA(OrderedDict):
+    def __init__(self):
+        super().__init__()
+        for name, parameter in ParametersCM().items():
+            self[name] = parameter
+##            if name not in ("Room frame filename",):
+##                self[name] = parameter
 
 
 
