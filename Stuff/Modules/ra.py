@@ -46,7 +46,7 @@ class RA(CM):
         # processing data from robot frame    
         with open(self.nameR, "r") as infile:
             self._processHeader(infile)
-            self.radius = self.trackerResolution * self.arenaDiameter * 100
+            self.radius = self.trackerResolution * self.arenaDiameter * 100 / 2
             self._processRoomFile(infile) # robot file generally internally corresponds to roomfile
 
         # processing data from rat file
@@ -66,7 +66,6 @@ class RA(CM):
             CM.cache.popitem(last = False)
 
 
-
     def _setRoomName(self, name): # ZMENIT rob na robot???
         if name == "auto":
             splitname = os.path.split(self.nameA)
@@ -78,6 +77,16 @@ class RA(CM):
                 raise IOError
         else:
             self.nameR = name
+
+
+    def _evaluateLine(self, line, endsplit):
+        temp = line.split()[:endsplit]
+        if temp[2] != "0" or temp[3] != "0":
+            temp[2] = float(temp[2]) - self.centerX + self.radius
+            temp[3] = float(temp[3]) - self.centerY + self.radius
+        else:
+            temp[2:4] = [0, 0]
+        return list(map(int, temp))
 
 
     def _addReinforcedSector(self, string, position):

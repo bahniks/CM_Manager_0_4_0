@@ -147,7 +147,7 @@ class CM:
         count = -1
         for line in infile:
             try:
-                line = list(map(float, line.split()[:endsplit])) # zmenit na int??? float je pro RA
+                line = self._evaluateLine(line, endsplit)
                 self.data.append(line)
             except Exception:
                 continue
@@ -206,6 +206,10 @@ class CM:
                 self.data[missLines][2:4] = before
 
 
+    def _evaluateLine(self, line, endsplit):
+        return list(map(int, line.split()[:endsplit]))
+
+
     def _processArenaFile(self, infile):
         for line in infile:
             if line.count("END_HEADER") > 0:
@@ -216,7 +220,7 @@ class CM:
         count = -1
         for line in infile:
             try:
-                line = list(map(float, line.split()[:7])) # zmenit na int??? float je pro RA
+                line = self._evaluateLine(line, 7)
             except Exception:
                 continue
 

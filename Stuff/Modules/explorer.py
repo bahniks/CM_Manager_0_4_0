@@ -508,7 +508,7 @@ class Explorer(ttk.Frame):
             Rx, Ry = curLine[2:4]
             Rx *= self.scale
             Ry *= self.scale
-            self.arenaCanv.coords("robotA", (Rx + 16, Ry + 16, Rx + 24, Ry + 24))   
+            self.arenaCanv.coords("robotA", (Rx + 12, Ry + 12, Rx + 28, Ry + 28))   
             self.roomCanv.coords("ratR", ((Ax - Rx)/2 + 146, (Ay - Ry)/2 + 146,
                                           (Ax - Rx)/2 + 154, (Ay - Ry)/2 + 154))
             r = self.cm.sectorRadius * self.scale
@@ -588,7 +588,7 @@ class Explorer(ttk.Frame):
         self.roomCanv.delete("trailR")
         if curLine[0] >= 10:
             end = curLine[0]
-            r = self.cm.radius
+            adjust = 150 - self.cm.radius * self.scale
             start = end - 500 if end > 500 else 0
             start = round(start*2, -1) // 2
             if m.mode == "CM":
@@ -597,18 +597,37 @@ class Explorer(ttk.Frame):
                 arena = []
                 room = []
                 for rx, ry, ax, ay in trail:
-                    arena.append((ax + 150 - r, ay + 150 - r))
-                    room.append((rx + 150 - r, ry + 150 - r))
-                arena.append((curLine[7] + 150 - r, curLine[8] + 150 - r))
-                room.append((curLine[2] + 150 - r, curLine[3] + 150 - r))
+                    arena.append((ax*self.scale + adjust, ay*self.scale + adjust))
+                    room.append((rx*self.scale + adjust, ry*self.scale + adjust))
+                arena.append((curLine[7] + adjust, curLine[8] + adjust))
+                room.append((curLine[2] + adjust, curLine[3] + adjust))
                 self.arenaCanv.create_line((arena), fill = "blue", width = 2, tag = "trailA")
                 self.roomCanv.create_line((room), fill = "blue", width = 2, tag = "trailR")
+            elif m.mode == "RA":
+                self.arenaCanv.delete("trailRobot")
+                trail = [tuple(content[2:4] + content[7:9]) for content in
+                         self.cm.data[start:end:5]]
+                ratA = []
+                ratR = []
+                robotA = []
+                for rx, ry, ax, ay in trail:
+                    ratA.append((ax*self.scale + adjust, ay*self.scale + adjust))
+                    robotA.append((rx*self.scale + adjust, ry*self.scale + adjust))
+                    ratR.append(((ax - rx)*self.scale / 2 + 150,
+                                 (ay - ry)*self.scale / 2 + 150))
+                ratA.append((curLine[7]*self.scale + adjust, curLine[8]*self.scale + adjust))
+                robotA.append((curLine[2]*self.scale + adjust, curLine[3]*self.scale + adjust))
+                ratR.append(((curLine[7] - curLine[2])*self.scale / 2 + 150,
+                             (curLine[8] - curLine[3])*self.scale / 2 + 150))
+                self.arenaCanv.create_line((ratA), fill = "blue", width = 2, tag = "trailA")
+                self.roomCanv.create_line((ratR), fill = "blue", width = 2, tag = "trailR")
+                self.arenaCanv.create_line((robotA), fill = "green", width = 2, tag = "trailRobot")
             else:
                 trail = [tuple(content[2:4]) for content in self.cm.data[start:end:5]]
                 arena = []
                 for ax, ay in trail:
-                    arena.append((ax + 150 - r, ay + 150 - r))
-                arena.append((curLine[2] + 150 - r, curLine[3] + 150 - r))
+                    arena.append((ax*self.scale + adjust, ay*self.scale + adjust))
+                arena.append((curLine[2] + adjust, curLine[3] + adjust))
                 self.arenaCanv.create_line((arena), fill = "blue", width = 2, tag = "trailA")
 
 
@@ -761,9 +780,9 @@ class Explorer(ttk.Frame):
             self.roomCanv.create_line((Sx1, Sy1, 150, 150, Sx2, Sy2), fill = "red", width = 2,\
                                        tags = "shockZone")        
         elif m.mode == "MWM":
-            x = self.cm.platformX + 20
-            y = self.cm.platformY + 20
-            r = self.cm.platformRadius
+            x = self.cm.platformX * self.scale + 20
+            y = self.cm.platformY * self.scale + 20
+            r = self.cm.platformRadius * self.scale
             self.arenaCanv.create_oval(x - r, y - r, x + r, y + r, outline = "red",
                                        width = 2, tags = "platformAF")
             self.roomCanv.create_oval(x - r, y - r, x + r, y + r, outline = "red",
@@ -772,41 +791,51 @@ class Explorer(ttk.Frame):
             r = self.cm.sectorRadius * self.scale / 2
             self.roomCanv.create_oval(150 - r, 150 - r, 150 + r, 150 + r, outline = "red",
                                       width = 2, tags = "shockZoneR")
-            self.roomCanv.create_oval(146, 146, 154, 154, outline = "green", fill = "green",
+            self.roomCanv.create_oval(142, 142, 158, 158, outline = "green3", fill = "green3",
                                       width = 2, tags = "robotR")            
             
             
 
     def _drawTrack(self):
-        if m.mode == "CM":
+        if m.mode == "CM" or m.mode == "RA":
             data = [line[2:4] + line[6:9] for line in self.cm.data if
                     self.minTime <= line[1] <= self.maxTime]
             arena = []
             room = []
             prev = [-100, -100, 0, -100, -100]
-            last = [0, 0]
+            last = 0
             for count, line in enumerate(data):
-                if abs(line[0] - prev[0]) + abs(line[1] - prev[1]) > 2 or count - last[0] == 25 or\
+                if abs(line[0] - prev[0]) + abs(line[1] - prev[1]) > 2 or count - last == 25 or\
                    line[2] > 0:
                     room.append(line[0:2])
-                    last[0] = count
-                if abs(line[3] - prev[3]) + abs(line[4] - prev[4]) > 2 or count - last[1] == 25:
                     arena.append(line[3:5])
-                    last[1] = count
+                    last = count
                 prev = line
-            self.arenaCanv.create_line(([item + 20 for line in arena for item in line]),
-                                       fill = "black", width = 2)
-            self.roomCanv.create_line(([item + 20 for line in room for item in line]),
-                                      fill = "black", width = 2)
 
+            if m.mode == "CM":
+                self.roomCanv.create_line(([i * self.scale + 20 for line in room for i in line]),
+                                          fill = "black", width = 2)
+            else:
+                self.arenaCanv.create_line(([i * self.scale + 20 for line in room for i in line]),
+                                           fill = "green", width = 2)
+                self.roomCanv.create_line(([(i[0] - i[1]) * self.scale / 2 + 150 for line in
+                                            zip(arena, room) for i in zip(line[0], line[1])]),
+                                          fill = "black", width = 2)
+                
+            self.arenaCanv.create_line(([i * self.scale + 20 for line in arena for i in line]),
+                                       fill = "black", width = 2)
+                
             if self.showShocksVar.get():
-                shocks = [line[2:4] for count, line in enumerate(self.cm.data) if
+                indices = slice(2,4) if m.mode == "CA" else slice(7,9)
+                fun = self.roomCanv.create_oval if m.mode == "CA" else self.arenaCanv.create_oval
+                
+                shocks = [line[indices] for count, line in enumerate(self.cm.data) if
                           self.minTime <= line[1] <= self.maxTime and line[6] > 0 and
                           self.cm.data[count - 1][6] <= 0]
                 for shock in shocks:
-                    self.roomCanv.create_oval(shock[0] + 16, shock[1] + 16,
-                                              shock[0] + 24, shock[1] + 24,
-                                              outline = "red", width = 3)
+                    fun(shock[0]*self.scale + 16, shock[1]*self.scale + 16,
+                        shock[0]*self.scale + 24, shock[1]*self.scale + 24,
+                        outline = "red", width = 3)         
         else:
             data = [line[2:4] for line in self.cm.data if self.minTime <= line[1] <= self.maxTime]
             points = []
@@ -817,7 +846,7 @@ class Explorer(ttk.Frame):
                     points.append(line)
                     last = count
                 prev = line
-            self.roomCanv.create_line(([item + 20 for line in points for item in line]),
+            self.roomCanv.create_line(([item*self.scale + 20 for line in points for item in line]),
                                       fill = "black", width = 2)
             
 
@@ -856,8 +885,8 @@ class Explorer(ttk.Frame):
         elif m.mode == "RA":
             self.roomCanv.create_oval(Ax - Rx + 146, Ay - Ry + 146, Ax - Rx + 154, Ay - Ry + 154,
                                        fill = "black", tags = "ratR")            
-            self.arenaCanv.create_oval(Rx + 16, Ry + 16, Rx + 24, Ry + 24, outline = "green",
-                                       fill = "green", tags = "robotA")
+            self.arenaCanv.create_oval(Rx + 12, Ry + 12, Rx + 28, Ry + 28, outline = "green3",
+                                       fill = "green3", tags = "robotA")
             r = self.cm.sectorRadius * self.scale
             self.arenaCanv.create_oval(Rx + 20 - r, Ry + 20 - r, Rx + 20 + r, Ry + 20 + r,
                                        outline = "red", tags = "shockZoneA", width = 2)
