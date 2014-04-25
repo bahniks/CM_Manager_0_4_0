@@ -35,6 +35,8 @@ def getGraphTypes():
         types[1] = ["Proximity to side", "DistanceFromCenterGraph(self)"]
     elif m.mode == "MWM":
         types.insert(2, ["Distance from platform", "DistanceFromPlatformGraph(self)"])
+    elif m.mode == "RA":
+        types.insert(2, ["Distance from robot", "DistanceFromRobotGraph(self)"])
     return types
 
 
@@ -309,7 +311,7 @@ class SpeedGraph(Graphs, SvgGraph):
            e.g. when skip = 12 and smooth = 2, speed is computed as an average of two speeds
                computed from lines separated by 11 lines
         """
-        indices = slice(7, 9) if m.mode == "CM" else slice(2, 4)
+        indices = cm.indices
         resolution = cm.trackerResolution
 
         # saving speed between every 'skip' data point ... in centimeters per second
@@ -386,7 +388,10 @@ class DistanceFromCenterGraph(Graphs, SvgGraph):
         self.radius = cm.radius
         Cx, Cy = cm.centerX, cm.centerY
 
-        if m.mode != "OF":
+        if m.mode == "RA":
+            dists = [((line[7] - Cx)**2 + (line[8] - Cy)**2)**0.5 for line in cm.data[start:] if
+                     line[1] <= self.maxTime]
+        elif m.mode != "OF":
             dists = [((line[2] - Cx)**2 + (line[3] - Cy)**2)**0.5 for line in cm.data[start:] if
                      line[1] <= self.maxTime]
         else:
@@ -411,6 +416,7 @@ class DistanceFromCenterGraph(Graphs, SvgGraph):
         self.drawGraph(maxY = self.maxY, valueList = self.points)
       
 
+
 class DistanceFromPlatformGraph(Graphs, SvgGraph):
     "graph depicting distance from platform during the MWM session"
     def __init__(self, parent, cm = None, purpose = "graph"):
@@ -434,7 +440,7 @@ class DistanceFromPlatformGraph(Graphs, SvgGraph):
 
         Cx, Cy = cm.centerX, cm.centerY
         Px, Py = cm.platformX, cm.platformY
-        self.platformRadius = cm.platformRadius
+        self.radius = cm.platformRadius
            
         self.points = [((line[2] - Px)**2 + (line[3] - Py)**2)**0.5 for line in cm.data[start:] if
                        line[1] <= self.maxTime]
@@ -449,11 +455,29 @@ class DistanceFromPlatformGraph(Graphs, SvgGraph):
         super().CM_loaded(cm, minTime, maxTime, initTime)
         self.compute(cm)
 
-        y = self.height * (1 - self.platformRadius/self.maxY)
+        y = self.height * (1 - self.radius/self.maxY)
         self.create_line((0, y, self.width, y), fill = "grey")
 
         self.drawGraph(maxY = self.maxY, valueList = self.points)
 
+
+
+class DistanceFromRobotGraph(DistanceFromPlatformGraph):
+    "graph depicting distance from the robot during the RA session"
+    def __init__(self, parent, cm = None, purpose = "graph"):
+        super().__init__(parent = parent, cm = cm, purpose = purpose)       
+
+        
+    def compute(self, cm, smooth = 10):
+        start = cm.findStart(self.minTime / 60000)
+
+        self.radius = cm.sectorRadius
+           
+        self.points = [((line[7] - line[2])**2 + (line[8] - line[3])**2)**0.5
+                       for line in cm.data[start:] if line[1] <= self.maxTime]
+
+        self.maxY = cm.radius * 2
+        
 
 
 class AngleGraph(Graphs, SvgGraph):
@@ -482,7 +506,11 @@ class AngleGraph(Graphs, SvgGraph):
             if line[1] > self.maxTime:
                 break
             else:
-                angle = (degrees(atan2(Cy - line[3], line[2] - Cx + 0.000001)) + 720 - CA) % 360
+                if m.mode == "RA":
+                    angle = (degrees(atan2(line[8] - line[3],
+                                           line[2] - line[7] + 0.000001)) + 540) % 360
+                else:
+                    angle = (degrees(atan2(Cy - line[3], line[2] - Cx + 0.000001)) + 720 - CA) % 360
                 if prev > 270 and angle < 90:
                     self.angles.append(360)
                     self.angles.append(0)

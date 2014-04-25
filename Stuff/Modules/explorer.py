@@ -33,7 +33,7 @@ from image import SVG
 from processor import ProgressWindow
 from optionget import optionGet
 from graphs import getGraphTypes, Graphs, SvgGraph, SpeedGraph, DistanceFromCenterGraph
-from graphs import AngleGraph, DistanceFromPlatformGraph
+from graphs import AngleGraph, DistanceFromPlatformGraph, DistanceFromRobotGraph
 from comment import Comment, commentColor
 import mode as m
 
@@ -227,11 +227,10 @@ class Explorer(ttk.Frame):
         self.saveBut.grid(column = 1, row = 2, sticky = E)
 
         self.removeReflections.grid(column = 1, row = 0, padx = 3, pady = 2, sticky = (N, W))
-        if m.mode == "CM":
-            self.showShocks.grid(column = 1, row = 1, padx = 3, pady = 2, sticky = (N, W))
         self.showTail.grid(column = 1, row = 2, padx = 3, pady = 2, sticky = (N, W))
 
         if m.files == "pair":
+            self.showShocks.grid(column = 1, row = 1, padx = 3, pady = 2, sticky = (N, W))
             self.showAnimation.grid(column = 0, row = 0, padx = 2, pady = 1, sticky = (N, W))
             self.showTrack.grid(column = 0, row = 1, padx = 2, pady = 1, sticky = (N, W))
         
@@ -883,7 +882,8 @@ class Explorer(ttk.Frame):
             self.roomCanv.create_oval(Rx + 16, Ry + 16, Rx + 24, Ry + 24,
                                        fill = "black", tags = "ratR")
         elif m.mode == "RA":
-            self.roomCanv.create_oval(Ax - Rx + 146, Ay - Ry + 146, Ax - Rx + 154, Ay - Ry + 154,
+            self.roomCanv.create_oval((Ax - Rx)/2 + 146, (Ay - Ry)/2 + 146,
+                                      (Ax - Rx)/2 + 154, (Ay - Ry)/2 + 154,
                                        fill = "black", tags = "ratR")            
             self.arenaCanv.create_oval(Rx + 12, Ry + 12, Rx + 28, Ry + 28, outline = "green3",
                                        fill = "green3", tags = "robotA")

@@ -18,6 +18,7 @@ along with Carousel Maze Manager.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from collections import OrderedDict
+from math import sqrt
 
 import os
 
@@ -52,6 +53,8 @@ class RA(CM):
         # processing data from rat file
         with open(self.nameA, "r") as infile:
             self._processArenaFile(infile) # rat file generally internally corresponds to arenafile
+
+        self.centerX = self.centerY = self.radius
 
         # discards missing points from beginning of self.data
         self._correctMissingFromBeginning()
@@ -99,6 +102,31 @@ class RA(CM):
             RA.cache.pop((self.nameA, self.nameR))   
 
 
-    def removeReflections(self, *args, bothframes = False, **kwargs):
-        super().removeReflections(*args, bothframes = bothframes, **kwargs)
+    def removeReflections(self, points = None, deleteSame = True, bothframes = True):
+        if points == None:
+            ps = self.findReflections(time = "max", startTime = 0, results = "indices")
+            ps = ps[0] + ps[1]
+            ps += [line[0] for line in self.data if
+                   sqrt((line[2] - line[7])**2 + (line[3] - line[8])**2) < 8]
+        else:
+            ps = points
+        super().removeReflections(points = ps, deleteSame = deleteSame, bothframes = True)
+
+
+
+    def _removalCondition(self, row, i, before, reflection):
+        """conditions in order of appearance:
+            large speed between the row and before row
+            same position as in the reflection row
+            we should expect the position to be closer to before row than to the
+            reflection row - determined by speed
+            wrong points in the row
+        """
+        old = self.data[row]
+        new = self.data[row + i]
+        return any((self._computeSpeed(new, before) > 250,
+                    new[7:9] == old[7:9],
+                    self._computeSpeed(reflection, new) * 30 < self._computeSpeed(before, new),
+                    row + i in self.interpolated))
+
 

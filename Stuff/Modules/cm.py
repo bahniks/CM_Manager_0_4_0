@@ -847,11 +847,12 @@ class CM:
             reflection row - determined by speed
             wrong points in the row
         """
-        return any((self._computeSpeed(self.data[row + i], before) > 250,
-                    self.data[row + i][2:4] == self.data[row][2:4],
-                    self.data[row + i][7:9] == self.data[row][7:9],
-                    self._computeSpeed(reflection, self.data[row + i]) * 30 <
-                    self._computeSpeed(before, self.data[row + i]),
+        old = self.data[row]
+        new = self.data[row + i]
+        return any((self._computeSpeed(new, before) > 250,
+                    new[2:4] == old[2:4],
+                    new[7:9] == old[7:9],
+                    self._computeSpeed(reflection, new) * 30 < self._computeSpeed(before, new),
                     row + i in self.interpolated))
 
     def _cacheRemoval(self):
