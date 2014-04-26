@@ -19,7 +19,7 @@ along with Carousel Maze Manager.  If not, see <http://www.gnu.org/licenses/>.
 
 from tkinter import *
 from tkinter import ttk
-from math import degrees, atan2, floor
+from math import degrees, atan2, floor, ceil
 
 from optionget import optionGet
 import mode as m
@@ -177,7 +177,8 @@ class Graphs(Canvas):
                     return cm.radius - min([line[2] - x0, x1 - line[2], line[3] - y0, y1 - line[3]])
             else:
                 def distance(line):
-                    return ((line[2] - cm.centerX)**2 + (line[3] - cm.centerY)**2)**0.5
+                    x, y = line[cm.indices]
+                    return ((x - cm.centerX)**2 + (y - cm.centerY)**2)**0.5
             for content in cm.data[start:]:
                 if content[1] <= self.maxTime: 
                     if distance(content) >= border:
@@ -341,13 +342,9 @@ class SpeedGraph(Graphs, SvgGraph):
                 self.points.append((avgSpeed / (smoothCounter % smooth)))
 
         # computing maximum speed depicted on y-axis
-        maxSpeed = max(self.points)
-        if round(maxSpeed, -1) <= maxSpeed:
-            self.maxY = round(maxSpeed, -1) + 10
-        else:
-            self.maxY = round(maxSpeed, -1)
+        self.maxY = ceil(max(self.points) / 10) * 10
 
- 
+
     def CM_loaded(self, cm, initTime = 0, minTime = 0, maxTime = "max"):
         """creates graph when CM file is loaded
            parameter initTime is the time of the player when the graph is initialized

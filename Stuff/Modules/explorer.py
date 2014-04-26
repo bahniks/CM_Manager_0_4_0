@@ -915,6 +915,7 @@ class Explorer(ttk.Frame):
             self.entrancesVar.set("0")
             self.selectedPVar.set("-")
 
+
     def _changeButtonStatuses(self):
         if not self.showTrackVar.get():
             self.playBut.state(["!disabled"])
@@ -962,7 +963,9 @@ class Explorer(ttk.Frame):
         parameters = {"CM": ("periodicity", "mobility", "immobility", "entrances", "shocks",
                              "bad points", "thigmotaxis"),
                       "MWM": ("mobility", "immobility", "bad points", "thigmotaxis", "passes"),
-                      "OF": ("mobility", "immobility", "bad points", "thigmotaxis")}
+                      "OF": ("mobility", "immobility", "bad points", "thigmotaxis"),
+                      "RA": ("mobility", "immobility", "entrances", "shocks", "bad points",
+                             "thigmotaxis")}
         parameters["CMSF"] = parameters["CM"]
 
         for parameter in parameters[m.mode]:

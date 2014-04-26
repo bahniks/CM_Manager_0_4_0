@@ -441,12 +441,15 @@ class ShowFiles(Toplevel):
         if arenafile in self.fileStorage.pairedfiles:
             roomfile = self.fileStorage.pairedfiles[arenafile]
         else:
-            if "Arena" in basename(arenafile):
+            if m.pairing[m.mode][0] in basename(arenafile):
                 splitName = os.path.split(arenafile)
-                roomfile = os.path.join(splitName[0], splitName[1].replace("Arena", "Room"))                    
-            elif "arena" in basename(arenafile):
+                roomfile = os.path.join(splitName[0], splitName[1].replace(m.pairing[m.mode][0],
+                                                                           m.pairing[m.mode][1]))                    
+            elif m.pairing[m.mode][0].lower() in basename(arenafile):
                 splitName = os.path.split(arenafile)
-                roomfile = os.path.join(splitName[0], splitName[1].replace("arena", "room"))
+                roomfile = os.path.join(splitName[0],
+                                        splitName[1].replace(m.pairing[m.mode][0].lower(),
+                                                             m.pairing[m.mode][1].lower()))
         if roomfile:
             os.startfile(roomfile)
         else:

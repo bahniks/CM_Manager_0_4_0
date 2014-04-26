@@ -96,10 +96,15 @@ class RA(CM):
         self.sectorRadius = eval(string[position+1])   
          
    
-
     def _cacheRemoval(self):
         if (self.nameA, self.nameR) in RA.cache:
             RA.cache.pop((self.nameA, self.nameR))   
+
+
+    def _returnSame(self, missing):
+        toDeleteRat = self._findSame(slice(7,9), missing)
+        addMissing = {row[0] - 1 for row in self.data if tuple(row[7:9]) in toDeleteRat}
+        return addMissing
 
 
     def removeReflections(self, points = None, deleteSame = True, bothframes = True):
@@ -111,7 +116,6 @@ class RA(CM):
         else:
             ps = points
         super().removeReflections(points = ps, deleteSame = deleteSame, bothframes = True)
-
 
 
     def _removalCondition(self, row, i, before, reflection):
