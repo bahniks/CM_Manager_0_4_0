@@ -209,14 +209,36 @@ class ParametersCMSF(OrderedDict):
 class ParametersRA(OrderedDict):
     def __init__(self):
         super().__init__()
+        ra = {"Total distance",
+              "Maximum time avoided",
+              "Time to first",
+              "Entrances",
+              "Shocks",
+              "Thigmotaxis",
+              "Directional mean",
+              "Circular variance",
+              "Mean distance from center",
+              "Maximum time of immobility",
+              "Proportion of time moving",
+              "Real minimum time",
+              "Real maximum time"}
         for name, parameter in ParametersCM().items():
-            self[name] = parameter
-##            if name not in ("Room frame filename",):
-##                self[name] = parameter
+            if name in ra:
+                self[name] = parameter
+        
+        self["Time in sectors"] = Par("getAngleBoxes", "advanced", {
+            "width": (Opt('WidthParTimeInSectors', 90, ['int', 'float']),
+                      "Width of sector [in degrees]"),
+            "center": (Opt('CenterParTimeInSectors', 0, ['int', 'float']),
+                       "Center of sector [in degrees]")
+            })
 
+        self["Median speed after shock"] = Par("getSpeedAfterShock", "experimental", {
+            "after": (Opt('SkipSpeedAfterShock', 25, ['int']),
+                      "Computed from every [in rows]")
+            })    
 
-
-
+        self["Robot filename"] = Par("getRoomName", "info", {})
 
 
 

@@ -24,6 +24,7 @@ import os
 
 
 from cm import CM
+from funcs import median
 
 
 class RA(CM):
@@ -73,9 +74,9 @@ class RA(CM):
         if name == "auto":
             splitname = os.path.split(self.nameA)
             if splitname[1].count("Rat") > 0:
-                self.nameR = os.path.join(splitname[0], splitname[1].replace("Rat", "Rob"))
+                self.nameR = os.path.join(splitname[0], splitname[1].replace("Rat", "Robot"))
             elif splitname[1].count("rat") > 0:
-                self.nameR = os.path.join(splitname[0], splitname[1].replace("rat", "rob"))
+                self.nameR = os.path.join(splitname[0], splitname[1].replace("rat", "robot"))
             else:
                 raise IOError
         else:
@@ -134,3 +135,40 @@ class RA(CM):
                     row + i in self.interpolated))
 
 
+    def getCircularVariance(self, *args, indices = slice(7,9), **kwargs):
+        return super().getCircularVariance(*args, indices = indices, **kwargs)
+
+    def getDirectionalMean(self, *args, indices = slice(7,9), **kwargs):
+        return super().getDirectionalMean(*args, indices = indices, **kwargs)
+
+
+    def getSpeedAfterShock(self, time = 20, startTime = 0, after = 25):
+        "returns median speed that the rat travelled 'after' points after shock"
+        time = time * 60000
+        start = self.findStart(startTime)
+
+        shocks = [content[0] for content in self.data[start:] if
+                  content[5] == 2 and content[1] < time]
+        if shocks:
+            selected = [shocks[0]]
+            prev = shocks[0]
+            for shock in shocks[1:]:
+                if shock - prev > after:
+                    selected.append(shock)
+                prev = shock
+        else:
+            return "NA"
+
+        speeds = []
+        for shock in selected:
+            if len(self.data) <= shock + after:
+                break
+            speeds.append(self._computeSpeed(self.data[shock], self.data[shock + after]))
+
+        return format(median(speeds), "0.2f")
+
+    def getAngleBoxes(self, *args, indices = slice(7,9), **kwargs):
+        return super().getAngleBoxes(*args, indices = indices, **kwargs)
+
+
+        

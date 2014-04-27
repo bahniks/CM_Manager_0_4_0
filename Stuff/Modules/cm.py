@@ -469,8 +469,9 @@ class CM:
         center = 0
         
         for content in self.data[start:]:
-            if content[1] <= time: 
-                distance = ((content[2] - self.centerX)**2 + (content[3] - self.centerY)**2)**0.5
+            if content[1] <= time:
+                x, y = content[self.indices]
+                distance = sqrt((x - self.centerX)**2 + (y - self.centerY)**2)
                 if distance >= border:
                     periphery += 1
                 else:
@@ -480,7 +481,7 @@ class CM:
 
 
     def getAngleBoxes(self, time = 20, startTime = 0, width = "default", results = "condensed",
-                      center = "target"):
+                      center = "target", indices = slice(2,4)):
         """returns proportion of time spent in angle boxes of width 'boxWidth' (provided in
                 degreess)
             first item is centered in center of shock zone - by default it means that
@@ -491,7 +492,7 @@ class CM:
         if width == "default":
             width = self.width
 
-        time = time * 60000
+        time *= 60000
         start = self.findStart(startTime)
 
         if center == "target":
@@ -499,12 +500,15 @@ class CM:
         elif center == "opposite":
             sectorCenterAngle = self.centerAngle + 180
         else:
-            sectorCenterAngle = self.centerAngle + center
+            if self.centerAngle:
+                sectorCenterAngle = self.centerAngle + center
+            else:
+                sectorCenterAngle = center
   
         angles = [0] * int(360 / width)
         for content in self.data[start:]:
             if content[1] <= time:
-                angle = (degrees(self._angle(content[2], content[3])) - sectorCenterAngle +
+                angle = (degrees(self._angle(*content[indices])) - sectorCenterAngle +
                          (width / 2) + 360) % 360
                 angles[int(angle // width)] += 1
 
@@ -542,14 +546,14 @@ class CM:
         return atan2(self.centerY - y, x - self.centerX + 0.000000001)
 
 
-    def getDirectionalMean(self, time = 20, startTime = 0):
+    def getDirectionalMean(self, time = 20, startTime = 0, indices = slice(2,4)):
         "returns directional mean angle in room frame"
         time = time * 60000
         start = self.findStart(startTime)
 
-        num = sum([sin(self._angle(content[2], content[3])) for content in self.data[start:] if
+        num = sum([sin(self._angle(*content[indices])) for content in self.data[start:] if
                    content[1] < time])
-        den = sum([cos(self._angle(content[2], content[3])) for content in self.data[start:] if
+        den = sum([cos(self._angle(*content[indices])) for content in self.data[start:] if
                    content[1] < time])
 
         if den == 0:
@@ -560,14 +564,14 @@ class CM:
         return format(result, "0.2f")
 
 
-    def getCircularVariance(self, time = 20, startTime = 0):
+    def getCircularVariance(self, time = 20, startTime = 0, indices = slice(2,4)):
         "return circular variance of angle in room frame (has values between 0 and 1 inclusive)"
-        circMean = radians(float(self.getDirectionalMean(time, startTime)))
+        circMean = radians(float(self.getDirectionalMean(time, startTime, indices = indices)))
         
         time = time * 60000
         start = self.findStart(startTime)
 
-        R = sum([cos(self._angle(content[2], content[3]) - circMean) for content in
+        R = sum([cos(self._angle(*content[indices]) - circMean) for content in
                  self.data[start:] if content[1] < time])
         
         circVar = 1 - R / len([1 for content in self.data[start:] if content[1] < time])
@@ -816,8 +820,10 @@ class CM:
 
 
     def _computeSpeed(self, row1, row2):
-        speed = ((row1[7] - row2[7])**2 + (row1[8] - row2[8])**2)**0.5 / \
-                ((abs(row2[1] - row1[1]) / 1000) * self.trackerResolution)
+        x1, y1 = row1[self.indices]
+        x2, y2 = row2[self.indices]
+        speed = (sqrt((x1 - x2)**2 + (y1 - y2)**2) /
+                 ((abs(row2[1] - row1[1]) / 1000) * self.trackerResolution))
         return speed # cm/s
 
     def _findSame(self, indices, points):
@@ -871,7 +877,7 @@ class CM:
         # finds data points that share coordinates with more than two points with reflections      
         if deleteSame:
             missing |= self._returnSame(missing)
-                 
+
         missing = sorted(missing)
 
         if missing:

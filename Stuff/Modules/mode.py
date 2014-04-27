@@ -54,13 +54,13 @@ fullname["OF"] = "Open field"
 fullname["RA"] = "Robot avoidance"
 
 pairing = {"CM": ("Arena", "Room"),
-           "RA": ("Rat", "Rob")} # zmenit pokud se bude menit pojmenovani !!!
+           "RA": ("Rat", "Robot")}
 
 time = {"CM": 20,
         "MWM": 1,
         "OF": 10,
         "CMSF": 20,
-        "RA": 20} # zkontrolovat
+        "RA": 20}
 
 
 def changeMode(newMode):
