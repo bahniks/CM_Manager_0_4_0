@@ -17,8 +17,8 @@ You should have received a copy of the GNU General Public License
 along with Carousel Maze Manager.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from collections import OrderedDict
-from math import sqrt
+from collections import OrderedDict, Counter
+from math import sqrt, ceil
 
 import os
 
@@ -166,9 +166,52 @@ class RA(CM):
             speeds.append(self._computeSpeed(self.data[shock], self.data[shock + after]))
 
         return format(median(speeds), "0.2f")
+    
 
     def getAngleBoxes(self, *args, indices = slice(7,9), **kwargs):
         return super().getAngleBoxes(*args, indices = indices, **kwargs)
+
+
+    def getDistanceFromRobot(self, time = 20, startTime = 0, distances = False):
+        time = time * 60000
+        start = self.findStart(startTime)
+
+        distances = [sqrt((line[2] - line[7])**2 + (line[3] - line[8])**2) for line
+                     in self.data[start:] if line[1] < time]
+
+        if not distances:
+            result = (sum(distances) / len(distances)) / self.trackerResolution
+            return format(result, "0.2f")
+        else:
+            return distances
+
+
+    def getDistanceBoxes(self, time = 20, startTime = 0, width = 10):
+        distances = self.getDistanceFromRobot(time = time, startTime = startTime)
+        maximum = self.arenaDiameter * 100
+        counter = Counter([(dist / self.trackerResolution) // width for dist in distances])
+        boxes = [0] * ceil(maximum / width)
+        for key, value in counter.items():
+            boxes[int(key)] = value
+        length = len(distances)
+        result = ("|".join(map(lambda x: format(x / length, "0.3f"), boxes)))
+
+        return result
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+    
 
 
         

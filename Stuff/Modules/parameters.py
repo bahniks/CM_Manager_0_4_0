@@ -240,8 +240,12 @@ class ParametersRA(OrderedDict):
 
         self["Robot filename"] = Par("getRoomName", "info", {})
 
+        self["Mean distance from robot"] = Par("getDistanceFromRobot", "basic", {})
 
-
+        self["Time in distances"] = Par("getDistanceBoxes", "advanced", {
+            "width": (Opt('WidthParTimeInDistances', 10, ['int', 'float']),
+                      "Width of brackets [in cm]")
+            })
 
 
 

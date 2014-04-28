@@ -72,8 +72,7 @@ class Processor(ttk.Frame):
         # labels
         self.statusBar = ttk.Label(self, textvariable = self.status)
         self.modeLab = ttk.Label(self, text = m.fullname[m.mode], font = ("Helvetica", "16"))
-
-        
+       
         # adding to grid
         self.parametersF.grid(column = 0, row = 3, columnspan = 4, sticky = (N, W), padx = 4)
         self.fileStorageFrame.grid(column = 3, row = 0, pady = 5, padx = 4)
@@ -93,7 +92,6 @@ class Processor(ttk.Frame):
 
         self.optionFrame.grid(column = 0, row = 5, sticky = (N, E), padx = 6)
   
-
         # what should be enlarged
         self.columnconfigure(2, weight = 1)
         self.rowconfigure(2, weight = 3)

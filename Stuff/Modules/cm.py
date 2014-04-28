@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with Carousel Maze Manager.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from math import degrees, atan2, sin, cos, pi, radians, sqrt
+from math import degrees, atan2, sin, cos, pi, radians, sqrt, ceil
 from collections import deque, OrderedDict
 import os
 
@@ -505,7 +505,7 @@ class CM:
             else:
                 sectorCenterAngle = center
   
-        angles = [0] * int(360 / width)
+        angles = [0] * ceil(360 / width)
         for content in self.data[start:]:
             if content[1] <= time:
                 angle = (degrees(self._angle(*content[indices])) - sectorCenterAngle +

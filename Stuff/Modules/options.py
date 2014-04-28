@@ -363,7 +363,10 @@ class ParameterOptionFrame(ttk.Labelframe):
             self.opts.append({})
             var = BooleanVar if option[1][2] == 'bool' else StringVar
             self.opts[row]["variable"] = var()
-            self.opts[row]["variable"].set(optionGet(*option[1]))
+            current = optionGet(*option[1])
+            if type(current) == str:
+                current = "'" + current + "'"
+            self.opts[row]["variable"].set(current)
             self.opts[row]["label"] = ttk.Label(self, text = option[0])
             self.opts[row]["label"].grid(column = 0, row = row, pady = 2, sticky = E)
             if option[1][2] == 'bool':

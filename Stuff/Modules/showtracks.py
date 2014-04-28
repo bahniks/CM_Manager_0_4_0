@@ -405,24 +405,24 @@ class FileTree(ttk.Frame):
         # frame radiobuttons       
         self.frameVar = StringVar()
         
-        if m.mode == "CM":
+        if m.files == "pair":
             self.frameVar.set("arena")
         else:
             self.frameVar.set("room")
         
-        if m.mode == "CM":
+        if m.files == "pair":
             self.frameFrame = ttk.Labelframe(self.bottomFrame, text = "Frame")
             self.frameFrame.grid(column = 2, row = 0, padx = 5, rowspan = 2, pady = 3, sticky = N)
             
-            self.arenaFrameRB = ttk.Radiobutton(self.frameFrame, text = "Arena",
+            self.arenaFrameRB = ttk.Radiobutton(self.frameFrame, text = m.pairing[m.mode][0],
                                                 variable = self.frameVar, value = "arena",
                                                 command = self.toggleFrame)
-            self.arenaFrameRB.grid(column = 0, row = 0, pady = 2)
+            self.arenaFrameRB.grid(column = 0, row = 0, pady = 2, sticky = W)
             
-            self.roomFrameRB = ttk.Radiobutton(self.frameFrame, text = "Room",
+            self.roomFrameRB = ttk.Radiobutton(self.frameFrame, text = m.pairing[m.mode][1],
                                                variable = self.frameVar, value = "room",
                                                command = self.toggleFrame)
-            self.roomFrameRB.grid(column = 0, row = 1, pady = 2)
+            self.roomFrameRB.grid(column = 0, row = 1, pady = 2, sticky = W)
 
 
 

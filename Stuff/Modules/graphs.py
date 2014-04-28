@@ -453,7 +453,8 @@ class DistanceFromPlatformGraph(Graphs, SvgGraph):
         self.compute(cm)
 
         y = self.height * (1 - self.radius/self.maxY)
-        self.create_line((0, y, self.width, y), fill = "grey")
+        color = "grey" if m.mode == "MWM" else "red"
+        self.create_line((0, y, self.width, y), fill = color)
 
         self.drawGraph(maxY = self.maxY, valueList = self.points)
 

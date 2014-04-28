@@ -51,11 +51,11 @@ class GUI(Tk):
         self.after(250, lambda: print(self.winfo_width()))
         self.after(250, lambda: print(self.winfo_height()))
         '''
-        x, y = 1010, 788
+        x, y = 1010, 813
         self.minsize(x, y)
         placeWindow(self, x, y)
 
-        self.selectFunction = ttk.Notebook(self)
+        self.selectFunction = ttk.Notebook(self, height = y, width = x)
         self.selectFunction.grid()
 
         self["menu"] = MenuCM(self)
