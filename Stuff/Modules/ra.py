@@ -67,7 +67,7 @@ class RA(CM):
         # caching
         RA.cache[(self.nameA, self.nameR)] = self.__dict__
         if len(RA.cache) > 10:
-            CM.cache.popitem(last = False)
+            RA.cache.popitem(last = False)
 
 
     def _setRoomName(self, name): # ZMENIT rob na robot???
@@ -176,18 +176,18 @@ class RA(CM):
         time = time * 60000
         start = self.findStart(startTime)
 
-        distances = [sqrt((line[2] - line[7])**2 + (line[3] - line[8])**2) for line
-                     in self.data[start:] if line[1] < time]
+        dists = [sqrt((line[2] - line[7])**2 + (line[3] - line[8])**2) for line
+                 in self.data[start:] if line[1] < time]
 
         if not distances:
-            result = (sum(distances) / len(distances)) / self.trackerResolution
+            result = (sum(dists) / len(dists)) / self.trackerResolution
             return format(result, "0.2f")
         else:
-            return distances
+            return dists
 
 
     def getDistanceBoxes(self, time = 20, startTime = 0, width = 10):
-        distances = self.getDistanceFromRobot(time = time, startTime = startTime)
+        distances = self.getDistanceFromRobot(time = time, startTime = startTime, distances = True)
         maximum = self.arenaDiameter * 100
         counter = Counter([(dist / self.trackerResolution) // width for dist in distances])
         boxes = [0] * ceil(maximum / width)
