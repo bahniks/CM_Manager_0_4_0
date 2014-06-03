@@ -201,7 +201,7 @@ class CM:
                                                   * missCounter + before[1]
                 missing = []
         
-        if missing != []:
+        if missing != [] and before:
             for missLines in missing:
                 self.data[missLines][2:4] = before
 

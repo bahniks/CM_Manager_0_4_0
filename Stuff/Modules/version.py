@@ -21,7 +21,7 @@ def version():
     return ['0', '4', '0']
 
 def date():
-    return "26 May 2014"
+    return "3 June 2014"
 
 def copyleft():
     return "2013, 2014"
