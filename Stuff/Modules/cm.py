@@ -18,7 +18,7 @@ along with Carousel Maze Manager.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from math import degrees, atan2, sin, cos, pi, radians, sqrt, ceil
-from collections import deque, OrderedDict
+from collections import deque, OrderedDict, defaultdict
 import os
 
 
@@ -402,13 +402,13 @@ class CM:
         return format(T1, "0.1f")
 
 
-    def getShocks(self, time = 20, startTime = 0):
+    def getShocks(self, time = 20, startTime = 0, indices = False):
         """computes number of shocks,
         argument 'time' is time of the session
         """
         time = time * 60000 # conversion from minutes to miliseconds
         start = self.findStart(startTime)
-        shocks = 0
+        shocks = []
         prev = 0
         for content in self.data[start:]:
             if content[5] != 2 and prev != 2 and content[1] <= time:
@@ -420,12 +420,16 @@ class CM:
             elif content[5] == 2 and prev == 2 and content[1] <= time:
                 continue
             elif content[5] == 2 and prev != 2 and content[1] <= time:
-                shocks += 1
+                shocks.append(content[0])
                 prev = 2
                 continue
             elif content[1] > time:
                 break
-        return shocks
+
+        if indices:
+            return shocks
+        else:
+            return len(shocks)
 
 
     def getEntrances(self, time = 20, startTime = 0):
@@ -994,7 +998,7 @@ class CM:
 
 
     def _findStartHelper(self, imin, imax, time):
-        "binary research helper function for findStart"
+        "binary search helper function for findStart"
         if imin + 1 == imax:
             return imax
         else:
@@ -1015,12 +1019,142 @@ class CM:
             return self._findStartHelper(0, len(self.data), startTime)
 
 
+    def recognizeAfterShockStrategy(self, i0, i1, minAngle = 15):
+        cx, cy = self.centerX, self.centerY
+        x0, y0 = self.data[i0][self.indices]
+        x1, y1 = self.data[i1][self.indices]
+        angle = ((degrees(atan2(x1 - cx, y1 - cy + 0.0000001)) -
+                  degrees(atan2(x0 - cx, y0 - cy + 0.0000001)) + 180) % 360) - 180
+        if angle > minAngle:
+            return "reaction_counterclockwise"
+        elif angle < -minAngle:
+            return "reaction_clockwise"
+        else:
+            return "no_reaction"
+            
+        
+    def recognizeStrategy(self, i0, i1, minSpeed = 10, percentSize = 20):
+        x0, y0 = self.data[i0][self.indices]
+        x1, y1 = self.data[i1][self.indices]
+        t0, t1 = self.data[i0][1], self.data[i1][1]
+        speed = (sqrt(((x1 - x0)**2 + (y1 - y0)**2)) / self.trackerResolution) / ((t1 - t0) / 1000)
+        if speed > minSpeed:
+            border = self.radius * (1 - (percentSize / 100))
+            cx, cy = self.centerX, self.centerY
+            inCenter = [sqrt((x - cx)**2 + (y - cy)**2) < border for x, y in
+                        [content[self.indices] for content in self.data[i0:i1+1]]]
+            if any(inCenter):
+                return "center"
+            else:
+                angle = ((degrees(atan2(x1 - cx, y1 - cy + 0.0000001)) -
+                          degrees(atan2(x0 - cx, y0 - cy + 0.0000001)) + 180) % 360) - 180
+                if angle > 0:
+                    return "counterclockwise"
+                elif angle < 0:
+                    return "clockwise"
+                else:
+                    return "immobile"
+        else:
+            return "immobile"
+        
+
+    def getStrategies(self, time = 20, startTime = 0, rows = 25, minSpeed = 10, minAngle = 15,
+                      borderPercentSize = 20):
+        i1 = self.data[self.findStart(time)][0]
+        time = time * 60000
+        start = self.findStart(startTime)
+        i0 = self.data[start][0]
+
+        shocks = deque(self.getShocks(time = time, startTime = startTime, indices = True))
+
+        nextShock = shocks.popleft() if shocks else i1 + 2*rows + 2
+        if nextShock < i0 + rows:
+            lastStrategy = self.recognizeStrategy(i0, nextShock, minSpeed, borderPercentSize)
+        else:
+            lastStrategy = self.recognizeStrategy(i0, i0 + rows, minSpeed, borderPercentSize)
+        beginning = i0
+        strategies = defaultdict(list)
+        adjust = False
+
+        i = i0
+        end = i1 - rows
+        while i < end:
+            if i == nextShock:
+                nextShock = shocks.popleft() if shocks else i1 + 2*rows + 2
+                if nextShock < i + rows:
+                    strategy = self.recognizeAfterShockStrategy(i, nextShock, minAngle)
+                    adjust = True                   
+                else:
+                    strategy = self.recognizeAfterShockStrategy(i, i + rows, minAngle)
+            elif i + 2*rows > nextShock:
+                strategy = self.recognizeStrategy(i, nextShock, minSpeed, borderPercentSize)
+                adjust = True
+            else:
+                strategy = self.recognizeStrategy(i, i + rows, minSpeed, borderPercentSize)
+
+            if lastStrategy != strategy:
+                strategies[lastStrategy].append((beginning, i))
+                beginning = i
+
+            lastStrategy = strategy
+            if adjust:
+                i = nextShock
+                adjust = False
+            else:
+                i += rows
+            
+        return strategies
 
 
+def main():
+    start = 9
+    end = 12
+    diff = end - start
+    
+    class DummyNumber:
+        def __init__(self, N):
+            self.number = str(N)
+        def get(self):
+            return self.number
 
+    class TimeFrame:
+        def __init__(self):
+            self.timeVar = DummyNumber(end)
+            self.startTimeVar = DummyNumber(start)
+            
+    class Parent:
+        def __init__(self):
+            self.timeFrame = TimeFrame()
+           
+    import image
+    import graphs
+
+    cm = CM("12rNO453_Arena.dat")
+    svg = image.SVG(600, 120, scale = 2)
+    graph = graphs.AngleGraph(parent = Parent(), cm = cm, purpose = "")
+    _, __, furtherText = graph.saveGraph(cm)
+    svg.drawGraph(points = "", furtherText = furtherText, boundary = True)
+    strategies = cm.getStrategies(end, start)
+    i0 = cm.findStart(start)
+    colors = {"counterclockwise": "blue",
+              "clockwise": "red",
+              "no_reaction": "yellow",
+              "immobile": "white",
+              "reaction_counterclockwise": "green",
+              "reaction_clockwise": "pink",
+              "center": "yellow"}
+    muster = '<line stroke="{}" stroke-width="10" x1="{}" y1="127.0" x2="{}" y2="127.0"/>'
+    for strategy, value in strategies.items():
+        for indices in value:
+            svg.content += muster.format(colors[strategy],
+                                         (indices[0]-i0)/(diff*2.5),
+                                         (indices[1]-i0)/(diff*2.5))
+    svg.save("test.svg")
+    os.startfile("test.svg")
+    
 
                                        
-                        
+if __name__ == "__main__": main()                       
 
 
 

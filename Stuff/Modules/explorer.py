@@ -877,8 +877,9 @@ class Explorer(ttk.Frame):
                                        width = 2, tag = "trailA")
             
         if m.mode == "CM":
-            self.roomCanv.create_line((Rx + 19, Ry + 19, Rx + 21, Ry + 21),
-                                      fill = "blue", width = 2, tag = "trailR")   
+            if self.showTailVar.get():
+                self.roomCanv.create_line((Rx + 19, Ry + 19, Rx + 21, Ry + 21),
+                                          fill = "blue", width = 2, tag = "trailR")   
             self.roomCanv.create_oval(Rx + 16, Ry + 16, Rx + 24, Ry + 24,
                                        fill = "black", tags = "ratR")
         elif m.mode == "RA":
