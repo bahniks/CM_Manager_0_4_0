@@ -962,7 +962,7 @@ class Explorer(ttk.Frame):
         
         menu = Menu(self, tearoff = 0)
         parameters = {"CM": ("periodicity", "mobility", "immobility", "entrances", "shocks",
-                             "bad points", "thigmotaxis"),
+                             "bad points", "thigmotaxis", "strategies"),
                       "MWM": ("mobility", "immobility", "bad points", "thigmotaxis", "passes"),
                       "OF": ("mobility", "immobility", "bad points", "thigmotaxis"),
                       "RA": ("mobility", "immobility", "entrances", "shocks", "bad points",

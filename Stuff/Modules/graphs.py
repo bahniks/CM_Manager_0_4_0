@@ -84,7 +84,7 @@ class Graphs(Canvas):
         self.drawParameter(cm = CM, parameter = self.drawnParameter)
 
 
-    def drawPeriods(self, periods):
+    def drawPeriods(self, periods, color = "red", width = 3):
         "draws selected parameter on top of the graph" 
         if not periods:
             return
@@ -105,7 +105,7 @@ class Graphs(Canvas):
                               0.03 * self.height,
                               (end - self.minTime) * self.width / timeSpread,
                               0.03 * self.height),
-                             fill = "red", width = 3, tags = "parameter")
+                             fill = color, width = width, tags = "parameter")
 
 
     def drawTimes(self, times):
@@ -252,6 +252,26 @@ class Graphs(Canvas):
                 wrongs.append((start, prev))
                 self.drawPeriods([(cm.data[wrong[0] - 1][1], cm.data[wrong[1] - 1][1]) for\
                                   wrong in wrongs])
+        elif parameter == "strategies":
+            rows = optionGet('rowsStrategies', 25, 'int')
+            minSpeed = optionGet('minSpeedStrategies', 10, ['int', 'float'])
+            minAngle = optionGet('minAngleStrategies', 15, ['int', 'float'])
+            borderPercentSize = optionGet('borderPercentSizeStrategies', 20, ['int', 'float'])
+            strategies = cm.getStrategies(time = self.maxTime / 60000,
+                                          startTime = self.minTime / 60000,
+                                          rows = rows, minSpeed = minSpeed, minAngle = minAngle,
+                                          borderPercentSize = borderPercentSize)
+            colors = {"counterclockwise": "green",
+                      "clockwise": "dodger blue",
+                      "no_reaction": "deep pink",
+                      "immobile": "white",
+                      "reaction_counterclockwise": "red",
+                      "reaction_clockwise": "goldenrod1",
+                      "center": "wheat4"}
+            for strategy, periods in strategies.items():
+                self.drawPeriods(periods, color = colors[strategy], width = 240)
+            self.lower("parameter")
+                
                 
                 
             

@@ -97,6 +97,16 @@ class ParametersCM(OrderedDict):
         self["Real minimum time"] = Par("realMinimumTime", "info", {})
         self["Real maximum time"] = Par("realMaximumTime", "info", {})
         self["Room frame filename"] = Par("getRoomName", "info", {})
+        self["Strategies"] = Par("getStrategies", "experimental", {
+            "rows": (Opt('rowsStrategies', 25, 'int'),
+                     "Length of time bins [in rows]"),
+            "minSpeed": (Opt('minSpeedStrategies', 10, ['int', 'float']),
+                         "Minimum speed counted [in cm/s]"),
+            "minAngle": (Opt('minAngleStrategies', 7, ['int', 'float']),
+                         "Minimum angle counted (after shock) [in °/s]"),
+            "borderPercentSize": (Opt('borderPercentSizeStrategies', 50, ['int', 'float']),
+                                  "Annulus width [in percents]")
+            })
 
 
         #self.findParameters()

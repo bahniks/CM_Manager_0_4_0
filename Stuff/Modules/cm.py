@@ -1019,21 +1019,23 @@ class CM:
             return self._findStartHelper(0, len(self.data), startTime)
 
 
-    def recognizeAfterShockStrategy(self, i0, i1, minAngle = 15):
+    def recognizeAfterShockStrategy(self, i0, i1, minAngle):
         cx, cy = self.centerX, self.centerY
         x0, y0 = self.data[i0][self.indices]
         x1, y1 = self.data[i1][self.indices]
+        t0, t1 = self.data[i0][1], self.data[i1][1]
         angle = ((degrees(atan2(x1 - cx, y1 - cy + 0.0000001)) -
                   degrees(atan2(x0 - cx, y0 - cy + 0.0000001)) + 180) % 360) - 180
-        if angle > minAngle:
+        angleSpeed = (angle * 1000) / (t1 - t0)
+        if angleSpeed > minAngle:
             return "reaction_counterclockwise"
-        elif angle < -minAngle:
+        elif angleSpeed < -minAngle:
             return "reaction_clockwise"
         else:
             return "no_reaction"
             
         
-    def recognizeStrategy(self, i0, i1, minSpeed = 10, percentSize = 20):
+    def recognizeStrategy(self, i0, i1, minSpeed, percentSize):
         x0, y0 = self.data[i0][self.indices]
         x1, y1 = self.data[i1][self.indices]
         t0, t1 = self.data[i0][1], self.data[i1][1]
@@ -1058,12 +1060,12 @@ class CM:
             return "immobile"
         
 
-    def getStrategies(self, time = 20, startTime = 0, rows = 25, minSpeed = 10, minAngle = 15,
-                      borderPercentSize = 20):
-        i1 = self.data[self.findStart(time)][0]
+    def getStrategies(self, time = 20, startTime = 0, rows = 25, minSpeed = 10, minAngle = 7,
+                      borderPercentSize = 50, indices = False):
+        i1, t1 = self.data[self.findStart(time)][0:2]
         time = time * 60000
         start = self.findStart(startTime)
-        i0 = self.data[start][0]
+        i0, t0 = self.data[start][0:2]
 
         shocks = deque(self.getShocks(time = time, startTime = startTime, indices = True))
 
@@ -1072,7 +1074,7 @@ class CM:
             lastStrategy = self.recognizeStrategy(i0, nextShock, minSpeed, borderPercentSize)
         else:
             lastStrategy = self.recognizeStrategy(i0, i0 + rows, minSpeed, borderPercentSize)
-        beginning = i0
+        beginning = i0 if indices else t0
         strategies = defaultdict(list)
         adjust = False
 
@@ -1093,8 +1095,13 @@ class CM:
                 strategy = self.recognizeStrategy(i, i + rows, minSpeed, borderPercentSize)
 
             if lastStrategy != strategy:
-                strategies[lastStrategy].append((beginning, i))
-                beginning = i
+                if indices:
+                    strategies[lastStrategy].append((beginning, i))
+                    beginning = i
+                else:
+                    t = self.data[i - 1][1]
+                    strategies[lastStrategy].append((beginning, t))
+                    beginning = t                
 
             lastStrategy = strategy
             if adjust:
@@ -1102,6 +1109,12 @@ class CM:
                 adjust = False
             else:
                 i += rows
+                
+        if indices:
+            strategies[lastStrategy].append((beginning, i1))
+        else:
+            t = self.data[i1 - 1][1]
+            strategies[lastStrategy].append((beginning, t))       
             
         return strategies
 
