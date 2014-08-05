@@ -44,7 +44,7 @@ def checkNewVersion(version):
     try:
         from optionget import optionGet
         from version import version as currentVersion
-        versionSeen = optionGet("DontShowVersion", currentVersion(), "list")
+        versionSeen = optionGet("DontShowVersion", currentVersion(), "list", True)
     except Exception:
         versionSeen = version
     for i in range(3):
@@ -76,13 +76,16 @@ def checkNewVersion(version):
                     root.config(cursor = "")
             else:
                 try:
+                    print(newVersion)
                     from optionwrite import optionWrite
-                    optionWrite("DontShowVersion", newVersion)
+                    optionWrite("DontShowVersion", newVersion, True)
                 except Exception:
                     pass
             root.destroy()
             break
-
+        elif int(newVersion[i]) < int(versionSeen[i]):
+            break
+        
     
 def download(version):
     "downloads the version from github"
