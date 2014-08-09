@@ -107,6 +107,12 @@ class ParametersCM(OrderedDict):
             "borderPercentSize": (Opt('borderPercentSizeStrategies', 50, ['int', 'float']),
                                   "Annulus width [in percents]")
             })
+        self["Bad points"] = Par("countBadPoints", "info", {})
+        self["Reflections"] = Par("countReflections", "info", {})
+        self["Outside points"] = Par("countOutsidePoints", "info", {
+            "distance": (Opt('OutsidePointsDistance', 1, 'int'),
+                     "Distance from margin counted [in pixels]"),
+            })
 
 
         #self.findParameters()
@@ -145,7 +151,10 @@ class ParametersMWM(OrderedDict):
                "Proportion of time moving",
                "Mean distance from center",
                "Real minimum time",
-               "Real maximum time"}
+               "Real maximum time",
+               "Bad points",
+               "Reflections",
+               "Outside points"}
         for name, parameter in ParametersCM().items():
             if name in mwm:
                 self[name] = parameter
@@ -194,7 +203,10 @@ class ParametersOF(OrderedDict):
               "Proportion of time moving",
               "Mean distance from center",
               "Real minimum time",
-              "Real maximum time"}
+              "Real maximum time",
+              "Bad points",
+              "Reflections",
+              "Outside points"}
         for name, parameter in ParametersCM().items():
             if name in of:
                 self[name] = parameter
@@ -231,7 +243,10 @@ class ParametersRA(OrderedDict):
               "Maximum time of immobility",
               "Proportion of time moving",
               "Real minimum time",
-              "Real maximum time"}
+              "Real maximum time",
+              "Bad points",
+              "Reflections",
+              "Outside points"}
         for name, parameter in ParametersCM().items():
             if name in ra:
                 self[name] = parameter

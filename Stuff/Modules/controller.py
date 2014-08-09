@@ -47,7 +47,7 @@ class Controls(list):
                             results = 'both')"""],
                          ["Outside Points", """countOutsidePoints(time = time,
                            startTime = startTime, distance = optionGet('OutsidePointsDistance',
-                           1, ['int', 'float']))"""],
+                           1, 'int'))"""],
                          ["Bad Points", "countBadPoints(time = time, startTime = startTime)"]
                          ]
         

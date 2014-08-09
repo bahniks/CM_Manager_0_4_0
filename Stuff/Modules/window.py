@@ -22,5 +22,5 @@ def placeWindow(window, windowWidth = 200, windowHeight = 300, xShift = 0, yShif
     screenWidth = window.winfo_screenwidth()
     screenHeight = window.winfo_screenheight()
     xPosition = int((screenWidth - windowWidth) / 2) + xShift
-    yPosition = int((screenHeight - windowHeight) / 2) + yShift
+    yPosition = max(int((screenHeight - windowHeight) / 2) + yShift, 10)
     window.geometry("+" + str(xPosition) + "+" + str(yPosition))

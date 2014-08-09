@@ -51,7 +51,7 @@ class GUI(Tk):
         self.after(250, lambda: print(self.winfo_width()))
         self.after(250, lambda: print(self.winfo_height()))
         '''
-        x, y = 1010, 813
+        x, y = 1010, 774
         self.minsize(x, y)
         placeWindow(self, x, y)
 

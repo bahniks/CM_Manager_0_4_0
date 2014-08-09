@@ -67,7 +67,7 @@ class Processor(ttk.Frame):
                                             variable = self.useBatchTimeVar,
                                             command = self.toggledUseBatchTime)
         self.setBatchTimeBut = ttk.Button(self.timeLabFrame, text = "Set", width = 3,
-                                          command = lambda: SetBatchTime(self))
+                                          command = self.setBatchTime)
 
         # labels
         self.statusBar = ttk.Label(self, textvariable = self.status)
@@ -301,6 +301,13 @@ class Processor(ttk.Frame):
         else:
             self.timeFrame.totalTime.state(["!disabled"])
             self.timeFrame.startTime.state(["!disabled"])
+
+
+    def setBatchTime(self):
+        SetBatchTime(self)
+        if not self.useBatchTimeVar.get():
+            self.useBatchTimeVar.set(True)
+            self.toggledUseBatchTime()        
 
                 
     def checkProcessing(self):

@@ -260,6 +260,9 @@ class Explorer(ttk.Frame):
         self.saveWhatCombo.grid(column = 1, row = 0)
         self.saveWhichFilesCombo.grid(column = 1, row = 1)
 
+        # statusBar binding
+        self.statusBar.bind("<Double-1>", self._statusBarDoubleclick)
+
         # parametersLF popUp menu bindings
         self.parametersLF.bind("<Button-3>", self.parametersPopUp)
         for child in self.parametersLF.winfo_children():
@@ -269,7 +272,7 @@ class Explorer(ttk.Frame):
         for number, gType in enumerate(getGraphTypes()):
             ttk.Radiobutton(self.graphLF, text = gType[0], variable = self.graphTypeVar,
                             command = self.changedGraph, value = gType[1])\
-                            .grid(row = number, pady = 2, padx = 1, sticky = (W))
+                            .grid(row = number, pady = 1, padx = 1, sticky = (W))
 
         # bindings
         self.bind("<Down>", lambda e: self.fileFrame.nextFun())
@@ -733,9 +736,15 @@ class Explorer(ttk.Frame):
                                              100 + self.minTime))
 
         self._changeButtonStatuses()
-
-        self.initialized = True
+        self._showComment(filename)
+        self.initialized = True       
         
+        if new and timeReset:
+            self.curTime.set(0)
+            self.timeVar.set(self._timeFormat(self.minTime))  
+
+
+    def _showComment(self, filename):
         if self.fileStorage.comments[filename]:
             comment = self.fileStorage.comments[filename].replace("\n", "\t")
             if len(comment) > 150:
@@ -743,11 +752,13 @@ class Explorer(ttk.Frame):
             self.status.set(comment)
         else:
             self.status.set("")
-        
-        if new and timeReset:
-            self.curTime.set(0)
-            self.timeVar.set(self._timeFormat(self.minTime))  
 
+
+    def _statusBarDoubleclick(self, e):
+        "opens comment window after doubleclick to status bar"
+        if self.fileFrame.selected:
+            Comment(self.fileFrame, self.fileFrame.selected, True)
+            
 
     def _loadData(self, filename):
         try:
@@ -1158,6 +1169,7 @@ class FileFrame(ttk.Frame):
 
         self.tree.bind("<1>", lambda e: self.click(e))
         self.tree.bind("<3>", lambda e: self.popUp(e))
+        self.tree.bind("<Double-1>", lambda e: self.doubleclick(e))
 
         self.tree.tag_configure("comment", background = commentColor())
         # previous and next buttons
@@ -1233,7 +1245,15 @@ class FileFrame(ttk.Frame):
             if not self.root.animate:
                 self.root.stopFun()
                 self.root.playFun()
-            
+
+
+    def doubleclick(self, event):
+        "called when item in tree is doubleclicked"
+        item = self.tree.identify("item", event.x, event.y)
+        file = self.files[int(item)]
+        if file == self.selected:
+            Comment(self, file, True)            
+                    
         
     def previousFun(self):
         "shows previous file"
@@ -1268,17 +1288,14 @@ class FileFrame(ttk.Frame):
     def orderByNames(self):
         "orders files by names"
         if self.files:
-            selected = self.files[eval(self.tree.selection()[0])]
             self.files.sort()
-            self.drawTree(selected = selected)
+            self.drawTree(selected = self.selected)
 
     def orderByTag(self):
         "order files by tags"
         if self.files:
-            selected = self.files[eval(self.tree.selection()[0])]
-            self.files.sort(key = lambda i: (i in self.fileStorage.tagged),
-                            reverse = True)
-            self.drawTree(selected = selected)
+            self.files.sort(key = lambda i: (i in self.fileStorage.tagged), reverse = True)
+            self.drawTree(selected = self.selected)
 
 
     def drawTree(self, selected = None):
@@ -1290,8 +1307,8 @@ class FileFrame(ttk.Frame):
             tag = "x" if file in self.fileStorage.tagged else ""             
             values = (tag)
             comment = "comment" if self.fileStorage.comments[file] else "withoutComment"
-            self.tree.insert("", "end", str(count), text = returnName(
-                file, self.files), values = values, tag = comment)
+            self.tree.insert("", "end", str(count), text = returnName(file, self.files),
+                             values = values, tag = comment)
 
         if selected:
             self.index = self.files.index(selected)
@@ -1305,8 +1322,8 @@ class FileFrame(ttk.Frame):
 
     def refresh(self):
         "refreshes the tree after adding a comment"
-        selected = self.files[eval(self.tree.selection()[0])]
-        self.drawTree(selected = selected)
+        self.root._showComment(self.selected)
+        self.drawTree(selected = self.selected)
             
 
     def popUp(self, event):
@@ -1315,7 +1332,8 @@ class FileFrame(ttk.Frame):
         menu = Menu(self, tearoff = 0)
         file = self.files[int(item)]
         if item:
-            menu.add_command(label = "Add comment", command = lambda: Comment(self, file))
+            correct = True if file == self.selected else False         
+            menu.add_command(label = "Add comment", command = lambda: Comment(self, file, correct))
             if file in self.fileStorage.tagged:
                 menu.add_command(label = "Remove tag", command = lambda: self.untagFun(index =
                                                                                        int(item)))

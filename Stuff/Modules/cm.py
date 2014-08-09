@@ -764,6 +764,11 @@ class CM:
         else:
             return format(median(angles), "0.2f")
 
+
+    def countReflections(self, time = 20, startTime = 0):
+        "used in processor as a parameter"
+        reflections = self.findReflections(time = time, startTime = startTime)
+        return reflections[0] + reflections[1]
         
 
     def findReflections(self, time = 20, startTime = 0, results = "both"):

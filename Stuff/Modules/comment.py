@@ -27,41 +27,58 @@ from optionget import optionGet
 
 class Comment(Toplevel):
     "class used to adding and viewing comments"
-    def __init__(self, root, filename):
+    def __init__(self, root, files, correct = True):
         super().__init__(root)
-
+               
         self.root = root
         self.fileStorage = self.root.fileStorage
-        placeWindow(self, 574, 190)
+        placeWindow(self, 574, 215)
         self.title("Comment")
         self.grab_set()
         self.focus_set()     
 
-        self.file = filename
-        self.comment = self.fileStorage.comments[self.file]
+        if type(files) is str:
+            files = [files]
+        self.files = files
+        if len(self.files) == 1:
+            filename = self.files[0]
+            self.comment = self.fileStorage.comments[filename]
+            self.name = ttk.Label(self, text = filename)
+        else:
+            self.comment = ""
+            self.name = ttk.Label(self, text = "{} files selected".format(len(self.files)))
         
-        self.name = ttk.Label(self, text = filename)
         self.okBut = ttk.Button(self, text = "Ok", command = self.okFun)
         self.closeBut = ttk.Button(self, text = "Close", command = self.destroy)
         self.text = Text(self, height = 8, wrap = "word", width = 70)
 
-        self.okBut.grid(column = 2, row = 2, pady = 2, padx = 10)
-        self.closeBut.grid(column = 1, row = 2, pady = 2, padx = 10)
+        self.okBut.grid(column = 2, row = 3, pady = 2, padx = 10)
+        self.closeBut.grid(column = 1, row = 3, pady = 2, padx = 10)
         self.name.grid(column = 0, row = 0, columnspan = 4, pady = 3, padx = 5)
-        self.text.grid(column = 0, row = 1, columnspan = 4, pady = 2, padx = 5,
+        self.text.grid(column = 0, row = 2, columnspan = 4, pady = 2, padx = 5,
                        sticky = (N, S, E, W))
+
+        if not correct:
+            warning = "Warning: This file is not the one currently displayed!"
+            self.warning = ttk.Label(self, text = warning)
+            self.warning.grid(column = 0, row = 1, columnspan = 4, pady = 3, padx = 5)
 
         self.columnconfigure(0, weight = 1)
         self.columnconfigure(3, weight = 1)
-        self.rowconfigure(1, weight = 1)
+        self.rowconfigure(2, weight = 1)
         
         self.text.insert("1.0", self.comment)
         self.text.bind("<3>", lambda e: self.popUp(e))
+        self.text.focus_set()
 
     def okFun(self):
         "saves the comment in filestorage"
-        comment = self.text.get("1.0", "end")
-        self.fileStorage.comments[self.file] = comment.strip()
+        comment = self.text.get("1.0", "end").strip()
+        for file in self.files:
+            if self.fileStorage.comments[file] and len(self.files) > 1:
+                self.fileStorage.comments[file] += "\n" + comment
+            else:
+                self.fileStorage.comments[file] = comment
         self.root.refresh()
         self.destroy()
 

@@ -21,6 +21,7 @@ from tkinter import *
 from tkinter import ttk
 from tkinter.filedialog import askopenfilename, asksaveasfilename
 from tkinter import messagebox
+from decimal import Decimal
 
 import pickle
 import os
@@ -103,6 +104,7 @@ class SetBatchTime(Toplevel):
 
         # frames
         self.buttonFrame = ttk.Frame(self)
+        self.splittingFrame = ttk.Frame(self)
         self.removeFrame = ttk.Frame(self)
         self.timeFrame = TimeFrame(self, observe = False)
 
@@ -115,6 +117,17 @@ class SetBatchTime(Toplevel):
         self.resetBut = ttk.Button(self.removeFrame , text = "Reset", command = self.resetFun)
         self.clearBut = ttk.Button(self.removeFrame , text = "Clear", command = self.clearFun)
 
+        # splitting buttons
+        self.split2 = ttk.Button(self.splittingFrame, text = "Split in 2",
+                                 command = lambda: self.splitTime(2), width = 9)
+        self.split3 = ttk.Button(self.splittingFrame, text = "Split in 3",
+                                 command = lambda: self.splitTime(3), width = 9)
+        self.split5 = ttk.Button(self.splittingFrame, text = "Split in 5",
+                                 command = lambda: self.splitTime(5), width = 9)
+        self.split2.grid(column = 0, row = 0)
+        self.split3.grid(column = 0, row = 1)
+        self.split5.grid(column = 0, row = 2)
+
         # text
         self.text = Text(self, height = 5, wrap = "word", width = 73)
         self.text.insert("1.0", self.batchTime)
@@ -124,10 +137,14 @@ class SetBatchTime(Toplevel):
             self.text["background"] = self._color()
         else:
             self.addBut["state"] = "disabled"
+            self.split2["state"] = "disabled"
+            self.split3["state"] = "disabled"
+            self.split5["state"] = "disabled"
             self.removeLastBut["state"] = "disabled"
             
         # adding to grid
         self.buttonFrame.grid(column = 1, row = 0, sticky = W, pady = 2)
+        self.splittingFrame.grid(column = 2, row = 0, pady = 2, sticky = W)
         self.removeFrame.grid(column = 3, row = 0, pady = 3)
         self.timeFrame.grid(column = 0, row = 0)
         
@@ -149,7 +166,7 @@ class SetBatchTime(Toplevel):
                    width = 3).grid(column = 0, row = 1)
         ttk.Button(self.buttonFrame, text = "+10", command = lambda: self.addTime(10),
                    width = 3).grid(column = 1, row = 1)
-
+        
 
     def _color(self):
         return "grey94"
@@ -215,6 +232,9 @@ class SetBatchTime(Toplevel):
         self.text["state"] = "normal"
         self.text["background"] = "white"
         self.addBut["state"] = "disabled"
+        self.split2["state"] = "disabled"
+        self.split3["state"] = "disabled"
+        self.split5["state"] = "disabled"
         self.removeLastBut["state"] = "disabled"
 
     def _checkText(self):
@@ -250,6 +270,9 @@ class SetBatchTime(Toplevel):
         self.text["state"] = "disabled"
         self.text["background"] = self._color()
         self.addBut["state"] = "normal"
+        self.split2["state"] = "normal"
+        self.split3["state"] = "normal"
+        self.split5["state"] = "normal"
         self.removeLastBut["state"] = "normal"
 
     def addTime(self, x):
@@ -257,13 +280,28 @@ class SetBatchTime(Toplevel):
         start = int(self.timeFrame.startTimeVar.get()) + x
         end = int(self.timeFrame.timeVar.get()) + x
         self.timeFrame.startTimeVar.set(str(start))
-        self.timeFrame.timeVar.set(str(end))        
+        self.timeFrame.timeVar.set(str(end))
+
+    def splitTime(self, x):
+        "splits all time bins in x new bins"
+        newSlots = []
+        for slot in self.batchTime:
+            start = Decimal(slot[0])
+            end = Decimal(slot[1])
+            diff = (end - start) / x
+            for i in range(x):
+                newSlots.append((start + i*diff, start + (i+1)*diff))
+        self.batchTime = [(self._roundDecimal(slot[0]),
+                           self._roundDecimal(slot[1])) for slot in newSlots]
+        self._updateText()
+
+    def _roundDecimal(self, d):
+        "helper function for splitTime"
+        if d == round(d):
+            return int(d)
+        else:
+            return round(float(d), 3)
         
-
-
-
-
-
 
 
 

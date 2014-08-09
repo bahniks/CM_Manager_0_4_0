@@ -344,6 +344,7 @@ class FileTree(ttk.Frame):
         self.tree.configure(yscrollcommand = self.scrollbar.set)
 
         self.tree.bind("<1>", lambda e: self.click(e))
+        self.tree.bind("<Double-1>", lambda e: self.doubleclick(e))
         self.tree.bind("<3>", lambda e: self.popUp(e))
 
         self.tree.tag_configure("comment", background = commentColor())
@@ -499,6 +500,13 @@ class FileTree(ttk.Frame):
             self.root.drawTracks(new = True)
             self.checkTag()
 
+
+    def doubleclick(self, event):
+        "called when item in tree is clicked"
+        item = self.tree.identify("item", event.x, event.y)
+        if item and self.index == int(item):
+            Comment(self, self.files[eval(self.tree.selection()[0])])
+            
         
     def previousFun(self):
         "shows previous file"
@@ -594,7 +602,10 @@ class FileTree(ttk.Frame):
         menu = Menu(self, tearoff = 0)
         if item:
             file = self.files[int(item)]
-            menu.add_command(label = "Add comment", command = lambda: Comment(self, file))
+            if int(item) == self.index:
+                menu.add_command(label = "Add comment", command = lambda: Comment(self, file))
+            else:
+                menu.add_command(label = "Add comment", command = lambda: Comment(self, file, False))
             if file in self.fileStorage.tagged:
                 menu.add_command(label = "Remove tag", command = lambda: self.untagFun(index =
                                                                                        int(item)))
