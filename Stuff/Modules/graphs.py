@@ -260,7 +260,7 @@ class Graphs(Canvas):
             strategies = cm.getStrategies(time = self.maxTime / 60000,
                                           startTime = self.minTime / 60000,
                                           rows = rows, minSpeed = minSpeed, minAngle = minAngle,
-                                          borderPercentSize = borderPercentSize)
+                                          borderPercentSize = borderPercentSize, summary = False)
             colors = {"counterclockwise": "green",
                       "clockwise": "dodger blue",
                       "no_reaction": "deep pink",

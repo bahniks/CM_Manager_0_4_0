@@ -172,7 +172,7 @@ class Processor(ttk.Frame):
                 if not self.useBatchTimeVar.get():
                     methods[name] = [methodcaller(par.method, startTime = startTime,
                                                   time = time, **options)]
-                elif par.group != "info":
+                elif par.group != "info" or name == "Rotation speed":
                     methods[name] = [methodcaller(par.method, startTime = times[0],
                                                   time = times[1], **options)
                                      for times in batchTime]

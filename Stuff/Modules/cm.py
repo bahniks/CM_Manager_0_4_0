@@ -949,10 +949,10 @@ class CM:
     
 
     def countBadPoints(self, time = 20, startTime = 0):
+        start = self.findStart(startTime)
+        
         time *= 60000
         startTime *= 60000
-
-        start = self.findStart(startTime)
         
         count = 0
         bad = 0
@@ -965,9 +965,8 @@ class CM:
                     bad += 1
 
         proportion = (bad / count) * 100
-        
-        return round(proportion, 2)
-
+        return format(proportion, "0.2f")
+    
 
     def countOutsidePoints(self, time = 20, startTime = 0, distance = 1):
         "returns number of data points where an animal was outside the arena"
@@ -1025,6 +1024,7 @@ class CM:
 
 
     def recognizeAfterShockStrategy(self, i0, i1, minAngle):
+        "characterizes strategy after a shock"
         cx, cy = self.centerX, self.centerY
         x0, y0 = self.data[i0][self.indices]
         x1, y1 = self.data[i1][self.indices]
@@ -1041,6 +1041,7 @@ class CM:
             
         
     def recognizeStrategy(self, i0, i1, minSpeed, percentSize):
+        "characterizes strategy in absence of a shock"
         x0, y0 = self.data[i0][self.indices]
         x1, y1 = self.data[i1][self.indices]
         t0, t1 = self.data[i0][1], self.data[i1][1]
@@ -1066,8 +1067,19 @@ class CM:
         
 
     def getStrategies(self, time = 20, startTime = 0, rows = 25, minSpeed = 10, minAngle = 7,
-                      borderPercentSize = 50, indices = False):
-        i1, t1 = self.data[self.findStart(time)][0:2]
+                      borderPercentSize = 50, indices = False, summary = True):
+        """characterizes strategies in a given time interval
+            rows - number of rows in a bin
+            minSpeed - minimal speed counted as movement in absence of shock
+            minAngle - minimal angular speed counted as movement after shock
+            borderPercentSize - boundary for center area
+            indices - return indices or times
+            summary - return summary for results or dict with indices or times
+        """
+        try:
+            i1, t1 = self.data[self.findStart(time)][0:2]
+        except IndexError:
+            i1, t1 = self.data[-1][0:2]
         time = time * 60000
         start = self.findStart(startTime)
         i0, t0 = self.data[start][0:2]
@@ -1120,11 +1132,63 @@ class CM:
         else:
             t = self.data[i1 - 1][1]
             strategies[lastStrategy].append((beginning, t))       
+
+        if summary:
+            order = ("reaction_counterclockwise", "reaction_clockwise", "no_reaction",
+                     "counterclockwise", "clockwise", "immobile", "center")
+            times = [sum([i[1] - i[0] for i in strategies[s]]) for s in order]
+            sumOfTimes = sum(times)
+            proportions = [format(time / sumOfTimes, "0.4f") for time in times]
+            return "|".join(proportions)
+        else:
+            return strategies
+
+
+    def getProportionOfStrategies(self, time = 20, startTime = 0, numerator = [], denominator = []):
+        "returns proportion of times of strategies in nominator and denominator"
+        strategies = self.getStrategies(time, startTime)
+        num = 0
+        denom = 0
+        for strategy in numerator:
+            num += sum([i[1] - i[0] for i in strategies[strategy]])
+        for strategy in denominator:
+            denom += sum([i[1] - i[0] for i in strategies[strategy]])
+
+        return format(num / denom, "0.3f")
+
+
+    def getRotationSpeed(self, time = 20, startTime = 0, rows = 25):
+        "returns speed of arena rotation in degrees per minute"
+        start = self.findStart(startTime)
+        end = self.findStart(time)
+
+        cx, cy = self.centerX, self.centerY
+        speeds = []
+
+        ax0, ay0 = self.data[start][7:9]
+        t0, rx0, ry0 = self.data[start][1:4]        
+        for content in self.data[(start+rows):end:rows]:
+            ax1, ay1 = content[7:9]
+            t1, rx1, ry1 = content[1:4]
+        
+            arenaAngle = ((degrees(atan2(ax1 - cx, ay1 - cy + 0.0000001)) -
+                           degrees(atan2(ax0 - cx, ay0 - cy + 0.0000001)) + 180) % 360) - 180
+            roomAngle = ((degrees(atan2(rx1 - cx, ry1 - cy + 0.0000001)) -
+                          degrees(atan2(rx0 - cx, ry0 - cy + 0.0000001)) + 180) % 360) - 180
+            speeds.append(((roomAngle - arenaAngle) * 60000) / (t1 - t0))
+
+            ax0, ay0, t0, rx0, ry0 = ax1, ay1, t1, rx1, ry1
+
+        if speeds:
+            return format(sum(speeds) / len(speeds), "0.1f")
+        else:
+            return "NA"
             
-        return strategies
+            
 
 
 def main():
+    return
     start = 9
     end = 12
     diff = end - start

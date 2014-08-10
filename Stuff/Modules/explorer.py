@@ -27,6 +27,7 @@ import os
 import os.path
 
 
+from showtracks import ShowTracks
 from filestorage import FileStorageFrame
 from commonframes import TimeFrame, returnName
 from image import SVG
@@ -995,13 +996,15 @@ class Explorer(ttk.Frame):
     def parametersPopUp(self, event):
         "shows menu for selection of parameters to be shown in parameters frame"      
         menu = Menu(self, tearoff = 0)
-        notAvailable = ["Total distance", "Entrances", "Time in sectors", "Time in quadrants"]
+        notAvailable = ["Total distance", "Entrances", "Time in sectors", "Time in quadrants",
+                        "Strategies"]
+        available = ["Bad points", "Outside points", "Reflections"]
         menu.add_radiobutton(label = "Don't show anything",
                              variable = self.selectedParameter, value = "nothing",
                              command = self._changedSelectedParameter)
         menu.add_separator()
         for name, par in m.parameters.items():
-            if par.group not in ["info", "custom"] and name not in notAvailable:
+            if par.group not in ["info", "custom"] and name not in notAvailable or name in available:
                 menu.add_radiobutton(label = 'Show {}'.format(name.lower()),
                                      variable = self.selectedParameter, value = name,
                                      command = self._changedSelectedParameter)
@@ -1024,7 +1027,8 @@ class Explorer(ttk.Frame):
                            "Time": "t.",
                            "time": "t.",
                            "Circular": "Circ.",
-                           "variance": "var."
+                           "variance": "var.",
+                           "points": "pts."
                            }
                 for key, value in mapping.items():
                     name = name.replace(key, value)
@@ -1324,6 +1328,11 @@ class FileFrame(ttk.Frame):
         "refreshes the tree after adding a comment"
         self.root._showComment(self.selected)
         self.drawTree(selected = self.selected)
+
+
+    def _showTrack(self, file):
+        "opens ShowTracks; accessed by right click on file"
+        ShowTracks(self, self.fileStorage.arenafiles, file)
             
 
     def popUp(self, event):
@@ -1340,6 +1349,7 @@ class FileFrame(ttk.Frame):
             else:
                 menu.add_command(label = "Add tag", command = lambda: self.tagFun(index =
                                                                                   int(item)))
+            menu.add_command(label = "Show track", command = lambda: self._showTrack(file))
 
             menu.post(event.x_root, event.y_root)
 

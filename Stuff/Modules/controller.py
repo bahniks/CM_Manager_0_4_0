@@ -553,6 +553,7 @@ class Controller(ttk.Frame):
             value = results
 
         elif method == "Bad Points":
+            results = float(results)
             if results > 10:
                 importance = "Problem"
             elif results > 5:

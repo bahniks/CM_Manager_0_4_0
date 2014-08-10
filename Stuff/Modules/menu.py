@@ -31,7 +31,7 @@ from options import OptionsCM, AdvancedOptions, GeneralOptions
 from optionwrite import optionWrite
 from optionget import optionGet
 from helpcmm import HelpCM
-from tools import saveFileStorage, loadFileStorage
+from tools import saveFileStorage, loadFileStorage, addTags
 from window import placeWindow
 from filestorage import FileStorage
 import version
@@ -50,14 +50,14 @@ class MenuCM(Menu):
 
         self.menu_file = Menu(self)
         self.menu_options = Menu(self)
-        #self.menu_tools = Menu(self) # for future
+        self.menu_tools = Menu(self)
         self.menu_task = Menu(self)
         self.menu_help = Menu(self)
         
         menuWidth = 8
         self.add_cascade(menu = self.menu_file, label = "{:^{}}".format("File", menuWidth))
         self.add_cascade(menu = self.menu_options, label = "{:^{}}".format("Options", menuWidth))
-        #self.add_cascade(menu = self.menu_tools, label = "{:^{}}".format("Tools", menuWidth))
+        self.add_cascade(menu = self.menu_tools, label = "{:^{}}".format("Tools", menuWidth))
         self.add_cascade(menu = self.menu_task, label = "{:^{}}".format("Task", menuWidth))
         self.add_cascade(menu = self.menu_help, label = "{:^{}}".format("Help", menuWidth))
 
@@ -73,6 +73,7 @@ class MenuCM(Menu):
         self.menu_options.add_command(label = "General options", command = self.generalOptions)
         self.menu_options.add_separator()
         self.menu_options.add_command(label = "Reset all options", command = self.resetOptions)
+        self.menu_tools.add_command(label = "Add tags", command = self.addTagsHelper)
         for task, name in m.fullname.items():
             self.menu_task.add_radiobutton(label = name, variable = self.task, value = task,
                                            command = self.changedTask)
@@ -106,6 +107,13 @@ class MenuCM(Menu):
         
     def loadSavedFiles(self):
         loadFileStorage(self.root)
+
+    def addTagsHelper(self):
+        try:
+            addTags(self.root)
+        except Exception as e:
+            messagebox.showinfo(message = "Sorry, something went wrong.", detail = e,
+                                title = "Error", icon = "error")
 
     def resetOptions(self):
         text = ("Are you sure that you want to reset all options (including parameter settings)"
@@ -278,7 +286,9 @@ class Updates(Toplevel):
         newVersion = self.returnSiteContent(url).split(".")
         for i in range(3):
             if int(newVersion[i]) > int(self.version[i]):
-                return newVersion        
+                return newVersion
+            elif int(newVersion[i]) < int(self.version[i]):
+                return None
         else:
             return None
 

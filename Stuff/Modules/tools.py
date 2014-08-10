@@ -301,7 +301,32 @@ class SetBatchTime(Toplevel):
             return int(d)
         else:
             return round(float(d), 3)
+
+
+def addTags(root):
+    "adds tags to files loaded from a text file"
+    # currently is not safe to possible problems
+    infile = askopenfilename(filetypes = [("Text", "*.txt")], initialdir = os.getcwd())
+    with open(infile) as f:
+        for line in f:
+            basename = os.path.basename(line.split()[0].strip())
+            for arenafile in m.fs[m.mode]:
+                if os.path.basename(arenafile) == basename:
+                    if arenafile not in m.fs[m.mode].tagged:
+                        m.fs[m.mode].tagged.append(arenafile)
+                    break
+    root.checkProcessing()
+                    
         
+       
+
+
+
+
+
+
+
+    
 
 
 

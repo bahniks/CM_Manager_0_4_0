@@ -107,12 +107,13 @@ class ParametersCM(OrderedDict):
             "borderPercentSize": (Opt('borderPercentSizeStrategies', 50, ['int', 'float']),
                                   "Annulus width [in percents]")
             })
-        self["Bad points"] = Par("countBadPoints", "info", {})
+        self["Percent bad points"] = Par("countBadPoints", "info", {})
         self["Reflections"] = Par("countReflections", "info", {})
         self["Outside points"] = Par("countOutsidePoints", "info", {
             "distance": (Opt('OutsidePointsDistance', 1, 'int'),
                      "Distance from margin counted [in pixels]"),
             })
+        self["Rotation speed"] = Par("getRotationSpeed", "info", {})
 
 
         #self.findParameters()
@@ -223,7 +224,7 @@ class ParametersCMSF(OrderedDict):
     def __init__(self):
         super().__init__()
         for name, parameter in ParametersCM().items():
-            if name not in ("Room frame filename",):
+            if name not in ("Room frame filename", "Rotation speed"):
                 self[name] = parameter
 
 
