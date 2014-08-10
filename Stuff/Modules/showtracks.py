@@ -41,7 +41,7 @@ class ShowTracks(Toplevel):
         self.controlled = controlled
         self.tracks = tracks
         self.root = root
-        self.fileStorage = self.root.fileStorage
+        self.fileStorage = m.fs[m.mode]
         self.index = self.tracks.index(nameA)
         self.enabledManualReflectionsRemoval = False
         self.size = 6 # size of a mouse circle for reflection removal

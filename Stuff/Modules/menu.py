@@ -32,8 +32,9 @@ from optionwrite import optionWrite
 from optionget import optionGet
 from helpcmm import HelpCM
 from tools import saveFileStorage, loadFileStorage, addTags
+from showtracks import ShowTracks
 from window import placeWindow
-from filestorage import FileStorage
+from filestorage import FileStorage, ShowFiles
 import version
 import mode as m
 
@@ -51,6 +52,7 @@ class MenuCM(Menu):
         self.menu_file = Menu(self)
         self.menu_options = Menu(self)
         self.menu_tools = Menu(self)
+        self.menu_show = Menu(self)
         self.menu_task = Menu(self)
         self.menu_help = Menu(self)
         
@@ -58,6 +60,7 @@ class MenuCM(Menu):
         self.add_cascade(menu = self.menu_file, label = "{:^{}}".format("File", menuWidth))
         self.add_cascade(menu = self.menu_options, label = "{:^{}}".format("Options", menuWidth))
         self.add_cascade(menu = self.menu_tools, label = "{:^{}}".format("Tools", menuWidth))
+        self.add_cascade(menu = self.menu_show, label = "{:^{}}".format("Show", menuWidth))
         self.add_cascade(menu = self.menu_task, label = "{:^{}}".format("Task", menuWidth))
         self.add_cascade(menu = self.menu_help, label = "{:^{}}".format("Help", menuWidth))
 
@@ -74,6 +77,8 @@ class MenuCM(Menu):
         self.menu_options.add_separator()
         self.menu_options.add_command(label = "Reset all options", command = self.resetOptions)
         self.menu_tools.add_command(label = "Add tags", command = self.addTagsHelper)
+        self.menu_show.add_command(label = "Show files", command = self.showFiles)
+        self.menu_show.add_command(label = "Show tracks", command = self.showTracks)
         for task, name in m.fullname.items():
             self.menu_task.add_radiobutton(label = name, variable = self.task, value = task,
                                            command = self.changedTask)
@@ -114,6 +119,19 @@ class MenuCM(Menu):
         except Exception as e:
             messagebox.showinfo(message = "Sorry, something went wrong.", detail = e,
                                 title = "Error", icon = "error")
+
+    def showFiles(self):
+        tabid = self.root.selectFunction.index(self.root.selectFunction.select())
+        ShowFiles(m.slaves[m.mode][0][tabid].fileStorageFrame, "arenafiles")
+
+    def showTracks(self):
+        if m.fs[m.mode]:
+            tabid = self.root.selectFunction.index(self.root.selectFunction.select())
+            root = m.slaves[m.mode][0][tabid].fileStorageFrame
+            ShowTracks(root, m.fs[m.mode].arenafiles, m.fs[m.mode].arenafiles[0])
+        else:
+            messagebox.showinfo(message = "You have not selected any files.",
+                                title = "No files selected", icon = "info")
 
     def resetOptions(self):
         text = ("Are you sure that you want to reset all options (including parameter settings)"

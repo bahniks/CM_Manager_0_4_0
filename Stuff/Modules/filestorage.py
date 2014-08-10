@@ -186,7 +186,7 @@ class ShowFiles(Toplevel):
         super().__init__(root)
 
         self.root = root
-        self.fileStorage = self.root.root.root.fileStorage
+        self.fileStorage = m.fs[m.mode]
         
         self["padx"] = 4
         self["pady"] = 4
@@ -312,7 +312,7 @@ class ShowFiles(Toplevel):
             elif self.shownFiles == "wrongfiles":
                 self.fileStorage.wrongfiles.remove(file)
             self.filesTree.delete(file)
-        self.root.root.fileStorageFrame.update()
+        self.root.update()
             
 
     def cropFun(self):
@@ -367,7 +367,7 @@ class ShowFiles(Toplevel):
         else:
             self.initfiles = self.fileStorage.wrongfiles            
         self.initialize()           
-        self.root.root.fileStorageFrame.update()
+        self.root.update()
         
 
     def showWrongfilesFun(self):
@@ -430,6 +430,7 @@ class ShowFiles(Toplevel):
         for file in self.filesTree.selection():
             if file in self.fileStorage.tagged:
                 self.untagFun(file)
+        self.root.update()
 
 
     def tagFilesFun(self):
@@ -437,6 +438,7 @@ class ShowFiles(Toplevel):
         for file in self.filesTree.selection():
             if file not in self.fileStorage.tagged:
                 self.tagFun(file)
+        self.root.update()
                 
 
     def openRoomFile(self, arenafile):
