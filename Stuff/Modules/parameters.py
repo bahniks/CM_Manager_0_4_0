@@ -115,6 +115,9 @@ class ParametersCM(OrderedDict):
             })
         self["Rotation speed"] = Par("getRotationSpeed", "info", {})
 
+        self.noBatch = ["Real minimum time", "Real maximum time", "Room frame filename",
+                        "Angle of target sector", "Width of target sector"]
+
 
         #self.findParameters()
         
@@ -191,6 +194,8 @@ class ParametersMWM(OrderedDict):
             })
         self["Angle of the platform"] = ParametersCM()["Angle of target sector"]
 
+        self.noBatch = ParametersCM().noBatch + ["Angle of the platform"]
+        
         
 
 class ParametersOF(OrderedDict):
@@ -218,6 +223,8 @@ class ParametersOF(OrderedDict):
             })
         self["Mean distance from side"] = Par("getMeanDistanceFromSide", "basic", {})
 
+        self.noBatch = ParametersCM().noBatch
+        
 
 
 class ParametersCMSF(OrderedDict):
@@ -227,6 +234,8 @@ class ParametersCMSF(OrderedDict):
             if name not in ("Room frame filename", "Rotation speed"):
                 self[name] = parameter
 
+        self.noBatch = ParametersCM().noBatch
+        
 
 
 class ParametersRA(OrderedDict):
@@ -273,7 +282,7 @@ class ParametersRA(OrderedDict):
                       "Width of brackets [in cm]")
             })
 
-
+        self.noBatch = ParametersCM().noBatch + ["Robot filename"]
 
 
 

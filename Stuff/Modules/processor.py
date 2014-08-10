@@ -172,7 +172,7 @@ class Processor(ttk.Frame):
                 if not self.useBatchTimeVar.get():
                     methods[name] = [methodcaller(par.method, startTime = startTime,
                                                   time = time, **options)]
-                elif par.group != "info" or name == "Rotation speed":
+                elif name not in parameters.noBatch:
                     methods[name] = [methodcaller(par.method, startTime = times[0],
                                                   time = times[1], **options)
                                      for times in batchTime]
@@ -186,10 +186,9 @@ class Processor(ttk.Frame):
                     
         # results header
         if self.useBatchTimeVar.get():
-            info = {method for method, attr in parameters.items() if attr.group == "info"}
             results = ["File"]
             for method in methods:
-                if method in info:
+                if method in parameters.noBatch:
                     results.append(method)
                 else:
                     results.extend([method + " ({}-{})".format(start, end) for
