@@ -1180,7 +1180,7 @@ class CM:
             ax0, ay0, t0, rx0, ry0 = ax1, ay1, t1, rx1, ry1
 
         if speeds:
-            return format(sum(speeds) / len(speeds), "0.1f")
+            return format(median(speeds), "0.1f")
         else:
             return "NA"
             
