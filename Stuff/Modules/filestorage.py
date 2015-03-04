@@ -752,6 +752,8 @@ class FileStorageFrame(ttk.Frame):
             return [], []
         if "}" in filenames and "{" in filenames:
             filenames = filenames[1:-1].split("} {")
+        elif filenames.endswith(")") and filenames.startswith("("):
+            filenames = list(eval(filenames))
         else:
             filenames = [x + ".dat" for x in filenames.split(".dat ")]
             if filenames[-1].endswith(".dat.dat"):

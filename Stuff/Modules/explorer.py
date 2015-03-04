@@ -30,7 +30,7 @@ import os.path
 from showtracks import ShowTracks
 from filestorage import FileStorageFrame
 from commonframes import TimeFrame, returnName
-from image import SVG
+from image import svgSave
 from processor import ProgressWindow
 from optionget import optionGet
 from graphs import getGraphTypes, Graphs, SvgGraph, SpeedGraph, DistanceFromCenterGraph
@@ -302,19 +302,19 @@ class Explorer(ttk.Frame):
             self.status.set("No file selected.")
             self.bell()
             return
-
+       
         problems = 0
         for filename in files:
-            try:
-                if filename in self.fileStorage.pairedfiles:
-                    cm = m.CL(filename, self.fileStorage.pairedfiles[filename])
-                else:
-                    cm = m.CL(filename, "auto")
-                if self.removeReflectionsVar.get():
-                    cm.removeReflections(points = self.fileStorage.reflections.get(filename, None))
-                self.saveOneImage(cm, filename)               
-            except Exception:
-                problems += 0
+            #try:
+            if filename in self.fileStorage.pairedfiles:
+                cm = m.CL(filename, self.fileStorage.pairedfiles[filename])
+            else:
+                cm = m.CL(filename, "auto")
+            if self.removeReflectionsVar.get():
+                cm.removeReflections(points = self.fileStorage.reflections.get(filename, None))
+            svgSave(cm, filename, self.saveWhatVar.get(), self)
+            #except Exception:
+            #    problems += 1
 
             if len(files) > 1:
                 progress.addOne()
@@ -336,63 +336,6 @@ class Explorer(ttk.Frame):
             else:
                 self.status.set("Image was saved.")
             self.root.config(cursor = "")
-
-
-    def saveOneImage(self, cm, filename):
-        "saves image for one file"
-        directory = optionGet("ImageDirectory", os.getcwd(), "str", True)
-        # pridat moznost scale u vsech SVG
-        
-        what =  self.saveWhatVar.get()    
-
-        if what == "both frames":
-            self.svg = SVG(600, 300)
-            self.saveArenaFrame(cm)
-            self.saveRoomFrame(cm, origin = (300, 0))
-        elif what == "arena frame":
-            self.svg = SVG(300, 300) 
-            self.saveArenaFrame(cm)
-        elif what == "room frame":
-            self.svg = SVG(300, 300)
-            self.saveRoomFrame(cm)
-        elif what == "graph":
-            self.svg = SVG(600, 120)
-            self.saveGraph(cm)
-        elif what == "all":
-            self.svg = SVG(600, 420)
-            self.saveArenaFrame(cm)
-            self.saveRoomFrame(cm, origin = (300, 0))
-            self.saveGraph(cm, origin = (0, 300))
-            
-        self.svg.save(os.path.join(directory, os.path.splitext(os.path.basename(filename))[0] +
-                                   "_" + what.replace(" ", "_") + ".svg")) # upravit
-            
-
-    def saveArenaFrame(self, cm, origin = (0, 0)):
-        "saves info about arena frame in self.svg"
-        self.svg.drawAAPA(cm, frame = "arena", startTime = int(self.timeFrame.startTimeVar.get()),
-                         time = int(self.timeFrame.timeVar.get()), boundary = True,
-                         sector = False, shocks = False, origin = origin) # dat do options
-
-
-    def saveRoomFrame(self, cm, origin = (0, 0)):
-        "saves info about room frame in self.svg"
-        self.svg.drawAAPA(cm, frame = "room", startTime = int(self.timeFrame.startTimeVar.get()),
-                         time = int(self.timeFrame.timeVar.get()), boundary = True,
-                         sector = True, shocks = True, origin = origin)
-
-
-    def saveGraph(self, cm, origin = (0, 0)):
-        "saves info about graph in self.svg"
-        size = (600, 120)
-        graph = eval(self.graphTypeVar.get()[:-1] + ', cm, purpose = "svg")')
-        yCoordinates, maxY, furtherText = graph.saveGraph(cm)
-        points = []
-        if yCoordinates:
-            length = len(yCoordinates) - 1
-            for count, y in enumerate(yCoordinates):       
-                points.append(((count * size[0]) / length, size[1] - ((y * size[1]) / maxY)))
-        self.svg.drawGraph(points, furtherText = furtherText, origin = origin, boundary = True)
 
 
     def _returnSelectedFiles(self):

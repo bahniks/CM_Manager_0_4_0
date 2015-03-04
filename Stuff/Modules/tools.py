@@ -34,11 +34,12 @@ from commonframes import TimeFrame
 import mode as m
 
 
-def saveFileStorage(root, mode):
+def saveFileStorage(root, mode, file = None):
     "saves pickled fileStorage"
     initialdir = optionGet("SelectedFilesDirectory", os.path.join(os.getcwd(), "Stuff",
                                                                   "Selected files"), "str", True)
-    file = asksaveasfilename(filetypes = [("Filestorage", "*.files")], initialdir = initialdir)
+    if not file:
+        file = asksaveasfilename(filetypes = [("Filestorage", "*.files")], initialdir = initialdir)
     if file:
         if os.path.splitext(file)[1] != ".files":
             file = file + ".files"
@@ -47,11 +48,15 @@ def saveFileStorage(root, mode):
             pickle.dump(m.fs[mode], infile)
 
 
-def loadFileStorage(root):
+def loadFileStorage(root, file = None):
     "loads pickled fileStorage"
     initialdir = optionGet("SelectedFilesDirectory", os.path.join(os.getcwd(), "Stuff",
                                                                   "Selected files"), "str", True)
-    file = askopenfilename(filetypes = [("Filestorage", "*.files")], initialdir = initialdir)
+    if not file:
+        file = askopenfilename(filetypes = [("Filestorage", "*.files")], initialdir = initialdir)
+    else:
+        if not os.path.exists(file):
+            return
     if file:
         with open(file, mode = "rb") as infile:
             loaded = pickle.load(infile).__dict__

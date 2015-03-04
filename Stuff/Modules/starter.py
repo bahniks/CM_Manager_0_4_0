@@ -33,7 +33,7 @@ from filestorage import FileStorage
 from optionget import optionGet
 from version import version
 from window import placeWindow
-from tools import saveFileStorage, doesFileStorageRequiresSave
+from tools import saveFileStorage, doesFileStorageRequiresSave, loadFileStorage
 import mode as m
 
 
@@ -60,10 +60,12 @@ class GUI(Tk):
 
         self["menu"] = MenuCM(self)
 
-        if not optionGet("Developer", False, 'bool', True):
-            self.protocol("WM_DELETE_WINDOW", self.closeFun)
+        self.protocol("WM_DELETE_WINDOW", self.closeFun)
 
         self.initialized = True
+        path = optionGet("SelectedFilesDirectory",
+                         os.path.join(os.getcwd(), "Stuff", "Selected files"), "str", True)
+        loadFileStorage(self, os.path.join(path, "~last.files"))
         self.mainloop()
 
 
@@ -90,11 +92,15 @@ class GUI(Tk):
 
     def closeFun(self):
         "ask for saving files on exit"
-        if doesFileStorageRequiresSave(self, m.mode):
-            self._askForSave(m.mode)
-        for mode in m.fs:
-            if mode != m.mode and doesFileStorageRequiresSave(self, mode):
-                self._askForSave(mode)
+        if not optionGet("Developer", False, 'bool', True):
+            if doesFileStorageRequiresSave(self, m.mode):
+                self._askForSave(m.mode)
+            for mode in m.fs:
+                if mode != m.mode and doesFileStorageRequiresSave(self, mode):
+                    self._askForSave(mode)
+        path = optionGet("SelectedFilesDirectory",
+                         os.path.join(os.getcwd(), "Stuff", "Selected files"), "str", True)
+        saveFileStorage(self, m.mode, os.path.join(path, "~last.files"))
         self.destroy()
 
 

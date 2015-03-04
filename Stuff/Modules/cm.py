@@ -1045,7 +1045,11 @@ class CM:
         x0, y0 = self.data[i0][self.indices]
         x1, y1 = self.data[i1][self.indices]
         t0, t1 = self.data[i0][1], self.data[i1][1]
-        speed = (sqrt(((x1 - x0)**2 + (y1 - y0)**2)) / self.trackerResolution) / ((t1 - t0) / 1000)
+        try:
+            speed = (sqrt(((x1 - x0)**2 + (y1 - y0)**2)) / self.trackerResolution) / ((t1 - t0) / 1000)
+        except Exception:
+            print(self.data[i0])
+            print(self.data[i1])
         if speed > minSpeed:
             border = self.radius * (1 - (percentSize / 100))
             cx, cy = self.centerX, self.centerY
@@ -1087,8 +1091,10 @@ class CM:
         shocks = deque(self.getShocks(time = time, startTime = startTime, indices = True))
 
         nextShock = shocks.popleft() if shocks else i1 + 2*rows + 2
-        if nextShock < i0 + rows:
+        if i0 < nextShock < i0 + rows:
             lastStrategy = self.recognizeStrategy(i0, nextShock, minSpeed, borderPercentSize)
+        elif i0 == nextShock:
+            lastStrategy = self.recognizeAfterShockStrategy(i0, i0 + rows, minAngle)
         else:
             lastStrategy = self.recognizeStrategy(i0, i0 + rows, minSpeed, borderPercentSize)
         beginning = i0 if indices else t0
@@ -1192,7 +1198,7 @@ def main():
     start = 9
     end = 12
     diff = end - start
-    
+
     class DummyNumber:
         def __init__(self, N):
             self.number = str(N)
@@ -1211,7 +1217,7 @@ def main():
     import image
     import graphs
 
-    cm = CM("12rNO453_Arena.dat")
+    cm = CM("13a_12_Arena.dat")
     svg = image.SVG(600, 120, scale = 2)
     graph = graphs.AngleGraph(parent = Parent(), cm = cm, purpose = "")
     _, __, furtherText = graph.saveGraph(cm)
