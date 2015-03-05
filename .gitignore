@@ -1,7 +1,15 @@
+# testing files #
+#################
 *.dat
 *.svg
 *.files
+Data
+Images
+
+# files made by running #
+#########################
+*.pyc
 *bugs.txt
 Options.txt
-*.pyc
-Data
+
+

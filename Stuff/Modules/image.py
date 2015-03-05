@@ -21,6 +21,7 @@ from math import radians, cos, sin
 
 
 import os
+import webbrowser # for testing
 
 
 from optionget import optionGet
@@ -33,11 +34,6 @@ def svgSave(cm, filename, what, root):
     "saves image for one file"
     directory = optionGet("ImageDirectory", os.getcwd(), "str", True)
 
-##    what = root.saveWhatVar.get()
-##    start = int(root.timeFrame.startTimeVar.get())
-##    end = int(root.timeFrame.timeVar.get())
-##    graph = eval(root.graphTypeVar.get()[:-1] + ', cm, purpose = "svg")')
-
     if what == "both frames":
         components = ["arena", "room"]
     elif what == "arena frame":
@@ -49,18 +45,20 @@ def svgSave(cm, filename, what, root):
     elif what == "all":
         components = ["arena", "room", "graph"]
 
-    svg = SVG(cm, components)    
-    svg.save(os.path.join(directory, os.path.splitext(os.path.basename(filename))[0] +
-                          "_" + what.replace(" ", "_") + ".svg")) # upravit
+    svg = SVG(cm, components, root)
+    file = os.path.splitext(os.path.basename(filename))[0] + "_" + what.replace(" ", "_") + ".svg"
+    svg.save(os.path.join(directory, file))
+    webbrowser.open_new(os.path.join(directory, file)) # for testing
         
-
-
-
 
 
 class SVG():
     "represents .svg file - text of the file is stored in self.content"
-    def __init__(self, cm, components):
+    def __init__(self, cm, components, root):
+        self.start = int(root.timeFrame.startTimeVar.get())
+        self.end = int(root.timeFrame.timeVar.get())
+        #graph = eval(root.graphTypeVar.get()[:-1] + ', cm, purpose = "svg")')
+
         self.cm = cm
         self.components = components
         self.scale = 1
@@ -130,12 +128,12 @@ class SVG():
                  }
         for component in self.components:
             xs, ys = sizes[component]
-            for i in range(1, len(x)):
-                if i >= xs[1] and (x[i-1] + xs[0]) < x[i]:
-                    x[i] = x[i-1] + xs[0]
-            for i in range(1, len(y)):
-                if i >= ys[1] and (y[i-1] + ys[0]) < y[i]:
-                    y[i] = y[i-1] + ys[0]
+            difx = (x[max((xs[1]-1, 0))] + xs[0]) - x[xs[1]]
+            dify = (y[max((ys[1]-1, 0))] + ys[0]) - y[ys[1]]
+            for i in range(max((1, xs[1])), len(x)):
+                x[i] += difx
+            for i in range(max((1, ys[1])), len(y)):
+                y[i] += dify
         self.x = x
         self.y = y
 
@@ -148,21 +146,96 @@ class SVG():
                         'width="{}" height="{}" />\n'.format(self.x[-1], self.y[-1])
 
     def add(self, new, x, y):
-        self.content += '<g transform="translate({0},{0})">\n'.format(self.x[x], self.y[y])
+        self.content += '<g transform="translate({0},{1})">\n'.format(self.x[x],
+                                                                      self.y[y])
         self.content += new + "\n"
         self.content += '</g>\n'        
 
 
     def addMain(self):
-        main = '<text x="0" y="5" font-size="10" fill="black">{}</text>'.format(self.main)
-        self.add(main, 2, 0)
+        x = (self.x[4] - self.x[3]) / 2
+        main = ('<text x="{0}" y="15" font-size="15" text-anchor="middle" '
+                'fill="black">{1}</text>'.format(x, self.main))
+        self.add(main, 3, 0)
 
 
     def addArena(self):
-        pass
+        self.add(self.addTrack(slice(7,9)), 2, 1)
+
 
     def addRoom(self):
-        pass
+        self.add(self.addTrack(slice(2,4), shocks = True), 4, 1)
+
+
+    def addTrack(self, indices, shocks = False):
+        "adds text into sefl.content corresponding to track from one frame of AAPA"
+
+        track = '<rect style="stroke:black;fill:none" x="0" y="0" width="300" height="300" />\n'
+
+        start = self.cm.findStart(self.start)
+        time = self.end * 60000
+
+        if "CM" in m.mode:
+            r = self.cm.radius
+            track += '<g transform="translate({0},{0})">\n'.format(150 - r)
+
+        track += self.addPlaces()
+
+        track += '<polyline points="'        
+
+        prev = (0, 0)
+        shock = False
+        shockPositions = []
+        for line in self.cm.data[start:]:
+            if line[1] > time:
+                break
+            positions = line[indices]
+            if positions != prev:
+                track += ",".join(map(str, positions)) + " "
+            if line[6] > 0:
+                if not shock:
+                    shock = True
+                    shockPositions.append(positions)
+            else:
+                shock = False                        
+            prev = positions
+
+        track += '" style = "fill:none;stroke:black"/>\n'
+
+        if shocks:
+            track += self.addShocks(shockPositions)
+
+        track += self.addBoundary()
+
+        if "CM" in m.mode:
+            track += '</g>\n'
+            
+        return track
+
+
+    def addPlaces(self):
+        angle = self.cm.centerAngle
+        width = self.cm.width
+        r = self.cm.radius
+        a1 = radians(angle - (width / 2))
+        a2 = radians(angle + (width / 2))
+        Sx1, Sy1 = r + (cos(a1) * r), r - (sin(a1) * r)
+        Sx2, Sy2 = r + (cos(a2) * r), r - (sin(a2) * r)
+        places = '<polyline fill="none" stroke="red" stroke-width="1.5" ' +\
+                 'points="{},{} {},{} {},{}"/>\n'.format(Sx1, Sy1, r, r, Sx2, Sy2)
+        return places
+
+    def addShocks(self, positions):
+        for position in positions:
+            shocks = '<circle fill="none" stroke="red" stroke-width="1.5" ' +\
+                     'cx="{}" cy="{}" r="3" />\n'.format(*position)
+        return shocks
+
+    def addBoundary(self):
+        r = self.cm.radius
+        bound = '<circle fill="none" stroke="black" cx="{0}" cy="{0}" r="{0}" />\n'.format(r) 
+        return bound    
+
 
     def addGraph(self):
         pass
@@ -180,72 +253,8 @@ class SVG():
         pass
 
     
-##    def drawAAPA(self, cm, frame, startTime = 0, time = 20, origin = (0, 0), boundary = False,
-##                 sector = False, shocks = False, size = 300, skip = 3):
-##        "adds text into sefl.content corresponding to track from one frame of AAPA"
-##
-##        self.content += '<g transform="translate{}">\n'.format(origin)
-##
-##        if boundary:
-##            self.content += '<rect style="stroke:black;fill:none" x="0" y="0" ' + \
-##                            'width="{0}" height="{0}" />\n'.format(size)            
-##
-##        start = cm.findStart(startTime)
-##        time = time * 60000
-##        r = cm.radius
-##
-##        self.content += '<g transform="translate({0},{0})">\n'.format((size / 2) - r)
-##
-##        if sector:
-##            self.angle = cm.centerAngle
-##            self.width = cm.width
-##            a1 = radians(self.angle - (self.width / 2))
-##            a2 = radians(self.angle + (self.width / 2))
-##            Sx1, Sy1 = r + (cos(a1) * r), r - (sin(a1) * r)
-##            Sx2, Sy2 = r + (cos(a2) * r), r - (sin(a2) * r)
-##            self.content += '<polyline fill="none" stroke="red" stroke-width="1.5" ' +\
-##                            'points="{},{} {},{} {},{}"/>\n'.format(Sx1, Sy1, r, r, Sx2, Sy2)              
-##
-##        self.content += '<polyline points="'        
-##        if frame == "room":
-##            prev = (0, 0)
-##            shock = False
-##            shockPositions = []
-##            for line in cm.data[start:]:
-##                if line[1] > time:
-##                    break
-##                positions = line[2:4]
-##                if positions != prev:
-##                    self.content += ",".join(map(str, positions)) + " "
-##                if line[6] > 0:
-##                    if not shock:
-##                        shock = True
-##                        shockPositions.append(positions)
-##                else:
-##                    shock = False                        
-##                prev = positions
-##        elif frame == "arena":
-##            prev = (0, 0)
-##            for count, line in enumerate(cm.data[start:], skip):
-##                if line[1] > time:
-##                    break
-##                positions = line[7:9]
-##                if count % skip == 0 and positions != prev:
-##                    self.content += ",".join(map(str, positions)) + " "
-##                    prev = positions
-##        self.content += '" style = "fill:none;stroke:black"/>\n'
-##
-##        if shocks and frame == "room": # u double avoidance odstranit frame podminku
-##            for position in shockPositions:
-##                self.content += '<circle fill="none" stroke="red" stroke-width="1.5" ' +\
-##                                'cx="{}" cy="{}" r="3" />\n'.format(*position)
-##
-##        self.content += '<circle fill="none" stroke="black" ' +\
-##                        'cx="{0}" cy="{0}" r="{0}" />\n'.format(r)
-##
-##        self.content += '</g>\n'
-##        
-##        self.content += '</g>\n'
+ 
+            
 ##
 ##
 ##    def drawGraph(self, points, furtherText = "", origin = (0, 0), boundary = False):

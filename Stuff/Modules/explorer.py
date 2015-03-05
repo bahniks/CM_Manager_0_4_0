@@ -295,10 +295,10 @@ class Explorer(ttk.Frame):
 
         if len(files) > 1:
             progress = ProgressWindow(self, len(files), text = "saved")
-        elif len(files) == 1:
+        elif len(files) == 1 and files[0]:
             self.root.config(cursor = "wait")
             self.root.update()
-        elif len(files) == 0:
+        else:
             self.status.set("No file selected.")
             self.bell()
             return
