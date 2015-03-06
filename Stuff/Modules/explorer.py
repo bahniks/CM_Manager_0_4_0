@@ -79,7 +79,7 @@ class Explorer(ttk.Frame):
         self.removeReflectionsVar.set(False)
         self.showShocksVar.set(True)
         self.showTailVar.set(False)
-        self.saveWhatVar.set("both frames")
+        self.saveWhatVar.set("all")
         self.saveWhichFilesVar.set("current")
         self.selectedParameter.set("")
         

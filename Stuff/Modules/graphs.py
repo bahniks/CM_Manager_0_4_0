@@ -41,85 +41,7 @@ def getGraphTypes():
 
 
 
-class Graphs(Canvas):
-    "parent class for all 'wide' graphs in Explore page"
-    def __init__(self, parent, width = 620, height = 120):
-        super().__init__(parent)
-        self["width"] = width
-        self["height"] = height
-        self["background"] = "white"
-        self.height = height
-        self.width = width
-        self.parent = parent
-        self.drawnParameter = None
-
-
-    def changedTime(self, newTime):
-        "changes position of a time measure on a graph"
-        x = (newTime - self.minTime) * self.width / (self.maxTime - self.minTime)
-        if x < 2:
-            x = 2
-        self.coords("timeMeasure", (x, 0, x, self.height))
-
-
-    def CM_loaded(self, CM, minTime, maxTime, initTime):
-        "basic method called when a file is loaded"
-        # time measure
-        self.create_line((2, 0, 2, self.height), fill = "red", tags = "timeMeasure")
-
-        # maximum time in miliseconds
-        if maxTime == "max":
-            self.maxTime = CM.data[-1][1]
-        else:
-            self.maxTime = maxTime
-
-        if minTime == "min":
-            self.minTime = CM.data[0][1]
-        else:
-            self.minTime = minTime
-
-        # set time measure
-        self.changedTime(initTime)
-
-        self.drawParameter(cm = CM, parameter = self.drawnParameter)
-
-
-    def drawPeriods(self, periods, color = "red", width = 3):
-        "draws selected parameter on top of the graph" 
-        if not periods:
-            return
-        timeSpread = (self.maxTime - self.minTime)
-        for period in periods:
-            if period[0] > self.minTime and period[1] < self.maxTime:
-                begin = period[0]
-                end = period[1]
-            elif self.minTime < period[1] < self.maxTime:
-                begin = self.minTime
-                end = period[1]
-            elif self.minTime < period[0] < self.maxTime:
-                begin = period[0]
-                end = self.maxTime
-            else:
-                continue
-            self.create_line(((begin - self.minTime) * self.width / timeSpread,
-                              0.03 * self.height,
-                              (end - self.minTime) * self.width / timeSpread,
-                              0.03 * self.height),
-                             fill = color, width = width, tags = "parameter")
-
-
-    def drawTimes(self, times):
-        "draws selected parameter on top of the graph"
-        if not times:
-            return
-        timeSpread = (self.maxTime - self.minTime)
-        for time in times:
-            if self.minTime < time < self.maxTime:
-                x = (time - self.minTime) * self.width / timeSpread
-                self.create_line((x, 0.01 * self.height, x, 0.07 * self.height),
-                                 fill = "red", width = 1, tags = "parameter")        
-
-
+class TheFatherOfAllGraphs():
     def drawParameter(self, cm, parameter):
         "computes selected parameter to be drawn on top of the graph"
         if self.drawnParameter:
@@ -271,10 +193,87 @@ class Graphs(Canvas):
             for strategy, periods in strategies.items():
                 self.drawPeriods(periods, color = colors[strategy], width = 240)
             self.lower("parameter")
-                
-                
-                
-            
+
+
+class Graphs(Canvas, TheFatherOfAllGraphs):
+    "parent class for all 'wide' graphs in Explore page"
+    def __init__(self, parent, width = 620, height = 120):
+        super().__init__(parent)
+        self["width"] = width
+        self["height"] = height
+        self["background"] = "white"
+        self.height = height
+        self.width = width
+        self.drawnParameter = None    
+        self.parent = parent
+        
+
+    def changedTime(self, newTime):
+        "changes position of a time measure on a graph"
+        x = (newTime - self.minTime) * self.width / (self.maxTime - self.minTime)
+        if x < 2:
+            x = 2
+        self.coords("timeMeasure", (x, 0, x, self.height))
+
+
+    def CM_loaded(self, CM, minTime, maxTime, initTime):
+        "basic method called when a file is loaded"
+        # time measure
+        self.create_line((2, 0, 2, self.height), fill = "red", tags = "timeMeasure")
+
+        # maximum time in miliseconds
+        if maxTime == "max":
+            self.maxTime = CM.data[-1][1]
+        else:
+            self.maxTime = maxTime
+
+        if minTime == "min":
+            self.minTime = CM.data[0][1]
+        else:
+            self.minTime = minTime
+
+        # set time measure
+        self.changedTime(initTime)
+
+        self.drawParameter(cm = CM, parameter = self.drawnParameter)
+
+
+    def drawPeriods(self, periods, color = "red", width = 3):
+        "draws selected parameter on top of the graph" 
+        if not periods:
+            return
+        timeSpread = (self.maxTime - self.minTime)
+        for period in periods:
+            if period[0] > self.minTime and period[1] < self.maxTime:
+                begin = period[0]
+                end = period[1]
+            elif self.minTime < period[1] < self.maxTime:
+                begin = self.minTime
+                end = period[1]
+            elif self.minTime < period[0] < self.maxTime:
+                begin = period[0]
+                end = self.maxTime
+            else:
+                continue
+            self.create_line(((begin - self.minTime) * self.width / timeSpread,
+                              0.03 * self.height,
+                              (end - self.minTime) * self.width / timeSpread,
+                              0.03 * self.height),
+                             fill = color, width = width, tags = "parameter")
+
+
+    def drawTimes(self, times):
+        "draws selected parameter on top of the graph"
+        if not times:
+            return
+        timeSpread = (self.maxTime - self.minTime)
+        for time in times:
+            if self.minTime < time < self.maxTime:
+                x = (time - self.minTime) * self.width / timeSpread
+                self.create_line((x, 0.01 * self.height, x, 0.07 * self.height),
+                                 fill = "red", width = 1, tags = "parameter")
+       
+           
     def drawGraph(self, maxY, valueList):
         """draws lines on a canvas based on maxY and valueList parameters
         maxY parameter sets maximum value at y-axis
@@ -291,11 +290,14 @@ class Graphs(Canvas):
  
 
 
-class SvgGraph():
+class SvgGraph(TheFatherOfAllGraphs):
     "represents graph to be saved in .svg file"
-    def __init__(self, parent, cm):
+    def __init__(self, parent, cm, width = 620, height = 120): 
+        self.height = height
+        self.width = width
+        self.drawnParameter = None    
         self.parent = parent
-
+        
     
     def saveGraph(self, cm):
         "returns information about graph for saving in .svg file"
@@ -305,6 +307,42 @@ class SvgGraph():
         self.writeFurtherText()
         return self.points, self.maxY, self.furtherText
 
+
+    def drawPeriods(self, periods, color = "red", width = 3):
+        "draws selected parameter on top of the graph" 
+        if not periods:
+            return
+        timeSpread = (self.maxTime - self.minTime)
+        for period in periods:
+            if period[0] > self.minTime and period[1] < self.maxTime:
+                begin = period[0]
+                end = period[1]
+            elif self.minTime < period[1] < self.maxTime:
+                begin = self.minTime
+                end = period[1]
+            elif self.minTime < period[0] < self.maxTime:
+                begin = period[0]
+                end = self.maxTime
+            else:
+                continue
+            self.create_line(((begin - self.minTime) * self.width / timeSpread,
+                              0.03 * self.height,
+                              (end - self.minTime) * self.width / timeSpread,
+                              0.03 * self.height),
+                             fill = color, width = width, tags = "parameter")
+
+
+    def drawTimes(self, times):
+        "draws selected parameter on top of the graph"
+        if not times:
+            return ""
+        timeSpread = (self.maxTime - self.minTime)
+        text = ""
+        for time in times:
+            if self.minTime < time < self.maxTime:
+                x = (time - self.minTime) * self.width / timeSpread
+                text += '<line x1="{0}" y1="0" x2="{0}" y2="5" stroke="red"/>'.format(x)
+        return text
 
 
 class SpeedGraph(Graphs, SvgGraph):

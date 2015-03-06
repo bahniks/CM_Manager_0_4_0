@@ -57,7 +57,8 @@ class SVG():
     def __init__(self, cm, components, root):
         self.start = int(root.timeFrame.startTimeVar.get())
         self.end = int(root.timeFrame.timeVar.get())
-        #graph = eval(root.graphTypeVar.get()[:-1] + ', cm, purpose = "svg")')
+        self.graph = eval(root.graphTypeVar.get()[:-5] + 'root, cm, purpose = "svg")')
+        self.parameter = "shocks" # for testing
 
         self.cm = cm
         self.components = components
@@ -160,14 +161,14 @@ class SVG():
 
 
     def addArena(self):
-        self.add(self.addTrack(slice(7,9)), 2, 1)
+        self.add(self.addTrack(slice(7,9), places = False), 2, 1)
 
 
     def addRoom(self):
         self.add(self.addTrack(slice(2,4), shocks = True), 4, 1)
 
 
-    def addTrack(self, indices, shocks = False):
+    def addTrack(self, indices, places = True, shocks = False):
         "adds text into sefl.content corresponding to track from one frame of AAPA"
 
         track = '<rect style="stroke:black;fill:none" x="0" y="0" width="300" height="300" />\n'
@@ -179,7 +180,8 @@ class SVG():
             r = self.cm.radius
             track += '<g transform="translate({0},{0})">\n'.format(150 - r)
 
-        track += self.addPlaces()
+        if places:
+            track += self.addPlaces()
 
         track += '<polyline points="'        
 
@@ -202,7 +204,7 @@ class SVG():
 
         track += '" style = "fill:none;stroke:black"/>\n'
 
-        if shocks:
+        if shocks and shockPositions:
             track += self.addShocks(shockPositions)
 
         track += self.addBoundary()
@@ -225,11 +227,13 @@ class SVG():
                  'points="{},{} {},{} {},{}"/>\n'.format(Sx1, Sy1, r, r, Sx2, Sy2)
         return places
 
+
     def addShocks(self, positions):
         for position in positions:
             shocks = '<circle fill="none" stroke="red" stroke-width="1.5" ' +\
                      'cx="{}" cy="{}" r="3" />\n'.format(*position)
         return shocks
+
 
     def addBoundary(self):
         r = self.cm.radius
@@ -238,52 +242,82 @@ class SVG():
 
 
     def addGraph(self):
-        pass
+        size = (600 + self.xgap, 120)
+        graph = ('<rect style="stroke:black;fill:none" x="0" y="0" '
+                 'width="{0}" height="{1}" />\n'.format(size[0], size[1])) 
+
+        yCoordinates, maxY, furtherText = self.graph.saveGraph(self.cm)
+        points = []
+        if yCoordinates:
+            length = len(yCoordinates) - 1
+            for count, y in enumerate(yCoordinates):       
+                points.append(((count * size[0]) / length, size[1] - ((y * size[1]) / maxY)))
+
+        if points:
+            graph += '<polyline points="'
+            for pair in points:
+                graph += ",".join(map(str, pair)) + " "      
+            graph += '" style = "fill:none;stroke:black"/>\n'
+
+        graph += self.addGraphLines()
+        graph += self.addParameter()
+        #graph += furtherText
+
+        self.add(graph, 2, 3)
+
+
+    def addGraphLines(self):
+        return ""
+
+
+    def addParameter(self):
+        return "" #
+        text = self.graph.drawParameter(self.cm, self.parameter)
+        return text
+
 
     def addXticks(self):
-        pass
+        unit = "min"
+        time = self.end - self.start
+        if time < 3:
+            time *= 60
+            unit = "s"
+        for div in [5, 4, 7, 6, 3]:
+            if time % div == 0:
+                break
+        else:
+            div = 4
+        ticks = [(time*i / div) + self.start for i in range(div + 1)]
+        ticks = [int(tick) if abs(tick - int(tick)) < 0.01 else round(tick, 2) for tick in ticks]
+        labels = [str(tick) + " " + unit for tick in ticks]
+
+        text = ""
+        for tick, label in zip(ticks, labels):
+            x = (tick - self.start)/time * (600 + self.xgap)
+            text += ('<text x="{0}" y="10" font-size="10" text-anchor="middle" '
+                     'fill="black">{1}</text>\n'.format(x, label))
+            text += '<line x1="{0}" y1="{1}" x2="{0}" y2="{2}" stroke="black"/>'.format(x, -2, -10)                            
+
+        self.add(text, 2, 5)
+        
 
     def addYticks(self):
         pass
 
+
     def addXlab(self):
-        pass
+        x = (self.x[4] - self.x[3]) / 2
+        xlab = ('<text x="{0}" y="15" font-size="15" text-anchor="middle" '
+                'fill="black">{1}</text>'.format(x, self.xlab))
+        self.add(xlab, 3, 6)
+
 
     def addYlab(self):
-        pass
-
+        y = (self.y[4] - self.y[3]) / 2 
+        ylab = ('<text x="0" y="{0}" font-size="15" text-anchor="middle" fill="black" '
+                'transform="translate({1},{0}) rotate(270)">{2}</text>'.format(y, -y+10, self.ylab))
+        self.add(ylab, 0, 3)
     
- 
-            
-##
-##
-##    def drawGraph(self, points, furtherText = "", origin = (0, 0), boundary = False):
-##        "adds text containing information about graph in self.content"
-##        size = (600, 120)
-##        self.content += '<g transform="translate{0}">\n'.format(origin)
-##        if boundary:
-##            self.content += '<rect style="stroke:black;fill:none" x="0" y="0" ' + \
-##                            'width="{}" height="{}" />\n'.format(*size)  
-##        self.content += furtherText
-##        if points:
-##            self.content += '<polyline points="'
-##            for pair in points:
-##                self.content += ",".join(map(str, pair)) + " "      
-##            self.content += '" style = "fill:none;stroke:black"/>\n'
-##        self.content += '</g>\n'
-
-
-##    def saveGraph(self, cm, origin = (0, 0)):
-##        "saves info about graph in self.svg"
-##        size = (600, 120)
-##        graph = eval(self.graphTypeVar.get()[:-1] + ', cm, purpose = "svg")')
-##        yCoordinates, maxY, furtherText = graph.saveGraph(cm)
-##        points = []
-##        if yCoordinates:
-##            length = len(yCoordinates) - 1
-##            for count, y in enumerate(yCoordinates):       
-##                points.append(((count * size[0]) / length, size[1] - ((y * size[1]) / maxY)))
-##        self.svg.drawGraph(points, furtherText = furtherText, origin = origin, boundary = True)        
 
     def save(self, file):
         "closes tags and saves self.content into a file"
