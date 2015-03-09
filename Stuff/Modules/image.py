@@ -57,7 +57,6 @@ class SVG():
     def __init__(self, cm, components, root):
         self.start = int(root.timeFrame.startTimeVar.get())
         self.end = int(root.timeFrame.timeVar.get())
-        self.graph = eval(root.graphTypeVar.get()[:-5] + 'root, cm, purpose = "svg")')
         self.parameter = "shocks" # for testing
 
         self.cm = cm
@@ -74,6 +73,10 @@ class SVG():
         self.addComponents()
         self.computeSize()
         self.addIntro()
+
+        graphWidth = self.x[5] - self.x[2]
+        self.graph = eval(root.graphTypeVar.get()[:-5] +
+                          'root, cm, purpose = "svg", width = graphWidth)')
 
         for component in self.components:           
             if component in ["xgap", "ygap"]:
@@ -116,10 +119,11 @@ class SVG():
     def computeSize(self):
         x = [0] * 6
         y = [0] * 7
+        # sizes [(x.size, column, columnspan), (y.size, row)]
         sizes = {"main": [(0, 0), (20, 1)],
                  "arena": [(300, 3), (300, 2)],
                  "room": [(300, 5), (300, 2)],
-                 "graph": [(600, 5), (120, 4)],
+                 "graph": [(600, 5, 3), (120, 4)],
                  "xgap": [(self.xgap, 4), (0, 0)],
                  "ygap": [(0, 0), (self.ygap, 3)],
                  "xticks": [(0, 0), (10, 5)],
@@ -129,7 +133,8 @@ class SVG():
                  }
         for component in self.components:
             xs, ys = sizes[component]
-            difx = (x[max((xs[1]-1, 0))] + xs[0]) - x[xs[1]]
+            xlen = xs[2] if len(xs) == 3 else 1 
+            difx = (x[max((xs[1] - xlen, 0))] + xs[0]) - x[xs[1]]
             dify = (y[max((ys[1]-1, 0))] + ys[0]) - y[ys[1]]
             for i in range(max((1, xs[1])), len(x)):
                 x[i] += difx
@@ -229,8 +234,9 @@ class SVG():
 
 
     def addShocks(self, positions):
+        shocks = ""
         for position in positions:
-            shocks = '<circle fill="none" stroke="red" stroke-width="1.5" ' +\
+            shocks += '<circle fill="none" stroke="red" stroke-width="1.5" ' +\
                      'cx="{}" cy="{}" r="3" />\n'.format(*position)
         return shocks
 
@@ -259,20 +265,14 @@ class SVG():
                 graph += ",".join(map(str, pair)) + " "      
             graph += '" style = "fill:none;stroke:black"/>\n'
 
-        graph += self.addGraphLines()
         graph += self.addParameter()
-        #graph += furtherText
+        graph += furtherText
 
         self.add(graph, 2, 3)
 
 
-    def addGraphLines(self):
-        return ""
-
-
     def addParameter(self):
-        return "" #
-        text = self.graph.drawParameter(self.cm, self.parameter)
+        text = self.graph.drawParameter(self.cm, self.parameter, purpose = "svg")
         return text
 
 

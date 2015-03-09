@@ -41,10 +41,52 @@ def getGraphTypes():
 
 
 
-class TheFatherOfAllGraphs():
-    def drawParameter(self, cm, parameter):
+class Graphs(Canvas):
+    "parent class for all 'wide' graphs in Explore page"
+    def __init__(self, parent, width = 600, height = 120, **kwargs):
+        super().__init__(parent)
+        self["width"] = width
+        self["height"] = height
+        self["background"] = "white"
+        self.height = height
+        self.width = width
+        self.drawnParameter = None    
+        self.parent = parent
+        
+
+    def changedTime(self, newTime):
+        "changes position of a time measure on a graph"
+        x = (newTime - self.minTime) * self.width / (self.maxTime - self.minTime)
+        if x < 2:
+            x = 2
+        self.coords("timeMeasure", (x, 0, x, self.height))
+
+
+    def CM_loaded(self, CM, minTime, maxTime, initTime):
+        "basic method called when a file is loaded"
+        # time measure
+        self.create_line((2, 0, 2, self.height), fill = "red", tags = "timeMeasure")
+
+        # maximum time in miliseconds
+        if maxTime == "max":
+            self.maxTime = CM.data[-1][1]
+        else:
+            self.maxTime = maxTime
+
+        if minTime == "min":
+            self.minTime = CM.data[0][1]
+        else:
+            self.minTime = minTime
+
+        # set time measure
+        self.changedTime(initTime)
+
+        self.drawParameter(cm = CM, parameter = self.drawnParameter)
+
+
+    def drawParameter(self, cm, parameter, purpose = "graph"):
         "computes selected parameter to be drawn on top of the graph"
-        if self.drawnParameter:
+        if self.drawnParameter and purpose == "graph":
             self.delete("parameter")
 
         self.drawnParameter = parameter
@@ -129,7 +171,7 @@ class TheFatherOfAllGraphs():
                 elif content[5] == 2 and prev != 2:
                     shocks.append(content[1])
                     prev = 2
-            self.drawTimes(shocks)
+            return self.drawTimes(shocks)
         elif parameter == "entrances":
             entrances = []
             prev = 0
@@ -144,7 +186,7 @@ class TheFatherOfAllGraphs():
                 elif content[5] == 2 and prev != 2:
                     entrances.append(content[1])
                     prev = 2
-            self.drawTimes(entrances)
+            return self.drawTimes(entrances)
         elif parameter == "passes":
             passes = []
             prev = 0
@@ -159,7 +201,7 @@ class TheFatherOfAllGraphs():
                 elif content[5] > 0 and content[5] != 5 and prev != 2:
                     passes.append(content[1])
                     prev = 2
-            self.drawTimes(passes)
+            return self.drawTimes(passes)
         elif parameter == "bad points":
             if cm.interpolated:
                 sortd = sorted(cm.interpolated)
@@ -193,49 +235,6 @@ class TheFatherOfAllGraphs():
             for strategy, periods in strategies.items():
                 self.drawPeriods(periods, color = colors[strategy], width = 240)
             self.lower("parameter")
-
-
-class Graphs(Canvas, TheFatherOfAllGraphs):
-    "parent class for all 'wide' graphs in Explore page"
-    def __init__(self, parent, width = 620, height = 120):
-        super().__init__(parent)
-        self["width"] = width
-        self["height"] = height
-        self["background"] = "white"
-        self.height = height
-        self.width = width
-        self.drawnParameter = None    
-        self.parent = parent
-        
-
-    def changedTime(self, newTime):
-        "changes position of a time measure on a graph"
-        x = (newTime - self.minTime) * self.width / (self.maxTime - self.minTime)
-        if x < 2:
-            x = 2
-        self.coords("timeMeasure", (x, 0, x, self.height))
-
-
-    def CM_loaded(self, CM, minTime, maxTime, initTime):
-        "basic method called when a file is loaded"
-        # time measure
-        self.create_line((2, 0, 2, self.height), fill = "red", tags = "timeMeasure")
-
-        # maximum time in miliseconds
-        if maxTime == "max":
-            self.maxTime = CM.data[-1][1]
-        else:
-            self.maxTime = maxTime
-
-        if minTime == "min":
-            self.minTime = CM.data[0][1]
-        else:
-            self.minTime = minTime
-
-        # set time measure
-        self.changedTime(initTime)
-
-        self.drawParameter(cm = CM, parameter = self.drawnParameter)
 
 
     def drawPeriods(self, periods, color = "red", width = 3):
@@ -290,14 +289,19 @@ class Graphs(Canvas, TheFatherOfAllGraphs):
  
 
 
-class SvgGraph(TheFatherOfAllGraphs):
+class SvgGraph():
     "represents graph to be saved in .svg file"
-    def __init__(self, parent, cm, width = 620, height = 120): 
+    def __init__(self, parent, cm, width = 600, height = 120): 
         self.height = height
         self.width = width
         self.drawnParameter = None    
         self.parent = parent
-        
+        self.__class__.__bases__ = (self.__class__.__bases__[1], self.__class__.__bases__[0])        
+
+
+    def __del__(self):
+        self.__class__.__bases__ = (self.__class__.__bases__[1], self.__class__.__bases__[0])
+            
     
     def saveGraph(self, cm):
         "returns information about graph for saving in .svg file"
@@ -345,21 +349,21 @@ class SvgGraph(TheFatherOfAllGraphs):
         return text
 
 
+        
 class SpeedGraph(Graphs, SvgGraph):
     "graph depicting speed during the session"
-    def __init__(self, parent, cm = None, purpose = "graph"):
-        if purpose == "graph":
-            Graphs.__init__(self, parent)
-        else:
-            SvgGraph.__init__(self, parent, cm)
-
+    def __init__(self, parent, cm = None, purpose = "graph", width = 600):
+        self.primaryParent = Graphs if purpose == "graph" else SvgGraph
+        self.primaryParent.__init__(self, parent, cm = cm, width = width)
+        
 
     def writeFurtherText(self):
         "makes text for svg file representing horizontal lines for every 10cm/s"
         self.furtherText = ""
         for y in range(1, floor(self.maxY / 10)):
             text = '<line stroke="lightgray" stroke-width="0.5" ' +\
-                   'x1="0" y1="{0}" x2="600" y2="{0}"/>\n'.format(y * 10 * 120 / self.maxY)
+                   'x1="0" y1="{0}" x2="{1}" y2="{0}"/>\n'.format(y * 10 * 120 / self.maxY,
+                                                                  self.width)
             self.furtherText += text       
 
 
@@ -431,7 +435,7 @@ class DistanceFromCenterGraph(Graphs, SvgGraph):
         "makes text for svg file containing info about line representing border of the arena"
         y = ((self.maxY - self.radius) / self.maxY) * 120
         self.furtherText = '<line stroke="gray" stroke-width="0.5" x1="0" ' +\
-                           'y1="{0}" x2="600" y2="{0}"/>\n'.format(y)
+                           'y1="{0}" x2="{1}" y2="{0}"/>\n'.format(y, self.width)
 
 
     def compute(self, cm, smooth = 10):
@@ -484,7 +488,7 @@ class DistanceFromPlatformGraph(Graphs, SvgGraph):
     def writeFurtherText(self):
         "makes text for svg file containing info about line representing border of the platform"
         self.furtherText = '<line stroke="gray" stroke-width="0.5" x1="0" ' +\
-                           'y1="{0}" x2="600" y2="{0}"/>\n'.format(self.platformRadius)
+                           'y1="{0}" x2="{1}" y2="{0}"/>\n'.format(self.platformRadius, self.width)
 
 
     def compute(self, cm, smooth = 10):

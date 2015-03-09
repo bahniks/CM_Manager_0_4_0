@@ -206,21 +206,22 @@ class Explorer(ttk.Frame):
         self.graphLF.grid(column = 0, row = 5, columnspan = 1, pady = 2, padx = 2, sticky = (N, W))
         self.fileStorageFrame.grid(column = 8, row = 0, pady = 2, padx = 3, sticky = (N, E))
         self.fileFrame.grid(column = 8, row = 1, rowspan = 4, padx = 3, sticky = (N, S))
-        self.parametersLF.grid(column = 3, row = 3, columnspan = 3)
-        self.timeLabFrame.grid(column = 1, row = 5, columnspan = 4, sticky = (N, W), pady = 2)        
+        self.parametersLF.grid(column = 3, row = 3, columnspan = 4, sticky = (E, W))
+        self.timeLabFrame.grid(column = 1, row = 5, columnspan = 4, sticky = (N, W),
+                               pady = 2, padx = 2)        
         self.timeFrame.grid(column = 0, row = 0)
         self.arenaFrame.grid(column = 0, row = 0, rowspan = 2, columnspan = 3,
-                             sticky = (N, S, E, W), padx = 2, pady = 2)
+                             sticky = (N, S, W), padx = 2, pady = 2)
         self.roomFrame.grid(column = 3, row = 0, rowspan = 2, columnspan = 4,
-                            sticky = (N, S, E, W), padx = 2, pady = 2)
+                            sticky = (N, S, E), padx = 2, pady = 2)
         self.speedScaleFrame.grid(column = 7, row = 0, rowspan = 2, sticky = (N, S), padx = 4,
                                   pady = 2)
-        self.optionsLF.grid(column = 5, row = 5, columnspan = 2, sticky = (N, W), pady = 2)
+        self.optionsLF.grid(column = 5, row = 5, columnspan = 2, sticky = (N), padx = 2)
         self.saveImagesLF.grid(column = 8, row = 5, sticky = (S), pady = 5)
         
         self.arenaCanv.grid(column = 0, row = 0, padx = 1, pady = 1)
         self.roomCanv.grid(column = 0, row = 0, padx = 1, pady = 1)
-        self.graph.grid(column = 0, row = 4, columnspan = 7, padx = 2, pady = 5, sticky = (E, W))
+        self.graph.grid(column = 0, row = 4, columnspan = 7, padx = 2, pady = 5)
         
         self.playBut.grid(column = 0, row = 0, sticky = (N, S), padx = 2, pady = 2)
         self.pauseBut.grid(column = 1, row = 0, sticky = (N, S), padx = 2, pady = 2)
@@ -241,7 +242,7 @@ class Explorer(ttk.Frame):
                        pady = 4)
         self.distance.grid(column = 1, row = 1, sticky = E)
         self.entrances.grid(column = 1, row = 2, sticky = E)
-        self.timePar.grid(column = 1, row = 4, sticky = E)
+        self.timePar.grid(column = 1, row = 4, sticky = E, padx = 2)
         self.selectedP.grid(column = 1, row = 3, sticky = E)
         self.totDistance.grid(column = 2, row = 1, sticky = E, padx = 4)
         self.totEntrances.grid(column = 2, row = 2, sticky = E, padx = 4)
