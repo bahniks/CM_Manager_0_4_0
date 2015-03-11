@@ -304,14 +304,16 @@ class AdvancedOptions(Toplevel):
         self.cancelBut = ttk.Button(self, text = "Cancel", command = self.cancelFun)    
         self.cancelBut.grid(column = 2, row = 1, padx = 3, pady = 4)
 
-
         self.settingsFrame = ttk.Frame(self)
-        self.settingsFrame.grid(row = 0, column = 0, columnspan = 4, padx = 3, pady = 4,
-                                   sticky = (N, W, E))
-        self.settingsFrame.columnconfigure(0, weight = 1)
+        self.settingsFrame2 = ttk.Frame(self)
+        
         self.optionFrames = []
         
         mapping = {"degrees": "°", "seconds": "s", "percents": "%"}
+        numFrames = sum([1 for par in m.parameters.values() if par.options])
+        split = numFrames > 7
+
+        count = 0
         for name, par in sorted(m.parameters.items()):
             if not par.options:
                 continue
@@ -327,7 +329,24 @@ class AdvancedOptions(Toplevel):
                 text = text.strip()
                 opt = option[0]
                 options.append((text + ": ", (opt.name, opt.default, opt.types), unit))
-            self.optionFrames.append(ParameterOptionFrame(self.settingsFrame, name, options))
+            if split and count >= (numFrames // 2):
+                frame = self.settingsFrame2
+            else:
+                frame = self.settingsFrame
+            self.optionFrames.append(ParameterOptionFrame(frame, name, options))
+            count += 1
+
+        if numFrames > 7:
+            self.settingsFrame.grid(row = 0, column = 0, columnspan = 2, padx = 3, pady = 4,
+                                    sticky = (N, W, E))
+            self.settingsFrame2.grid(row = 0, column = 2, columnspan = 2, padx = 3, pady = 4,
+                                     sticky = (N, W, E))
+        else:
+            self.settingsFrame.grid(row = 0, column = 0, columnspan = 4, padx = 3, pady = 4,
+                                    sticky = (N, W, E))
+
+        self.settingsFrame.columnconfigure(0, weight = 1)
+        self.settingsFrame2.columnconfigure(0, weight = 1)        
 
         for row, frame in enumerate(self.optionFrames):
             frame.grid(column = 0, row = row, pady = 3, padx = 3, sticky = (W, E))

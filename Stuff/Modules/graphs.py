@@ -92,25 +92,26 @@ class Graphs(Canvas):
         self.drawnParameter = parameter
 
         if parameter == "periodicity":
-            self.drawPeriods(cm.getPeriodicity(forGraph = True, time = self.maxTime / 60000,
-                                               startTime = self.minTime / 60000,
-                                               minSpeed = optionGet('MinSpeedPeriodicity',
-                                                                    10, ['int', 'float']),
-                                               skip = optionGet('SkipPeriodicity', 12, ['int']),
-                                               smooth = optionGet('SmoothPeriodicity', 2, ['int']),
-                                               minTime = optionGet('MinTimePeriodicity', 9,
-                                                                   ['int', 'float', 'list'])))
+            periodicity = cm.getPeriodicity(forGraph = True, time = self.maxTime / 60000,
+                                            startTime = self.minTime / 60000,
+                                            minSpeed = optionGet('MinSpeedPeriodicity',
+                                                                 10, ['int', 'float']),
+                                            skip = optionGet('SkipPeriodicity', 12, ['int']),
+                                            smooth = optionGet('SmoothPeriodicity', 2, ['int']),
+                                            minTime = optionGet('MinTimePeriodicity', 9,
+                                                                ['int', 'float', 'list']))
+            return self.drawPeriods(periodicity)
         elif parameter == "immobility":
-            self.drawPeriods(cm.getMaxTimeOfImmobility(forGraph = True,
-                                                       time = self.maxTime / 60000,
-                                                       startTime = self.minTime / 60000,
-                                                       minSpeed = optionGet(
-                                                           'MinSpeedMaxTimeImmobility', 10,
-                                                           ['int', 'float']),
-                                                       skip = optionGet('SkipMaxTimeImmobility',
-                                                                        12, 'int'),
-                                                       smooth = optionGet(
-                                                           'SmoothMaxTimeImmobility', 2, 'int')))
+            immobility = cm.getMaxTimeOfImmobility(forGraph = True,
+                                                   time = self.maxTime / 60000,
+                                                   startTime = self.minTime / 60000,
+                                                   minSpeed = optionGet('MinSpeedMaxTimeImmobility',
+                                                                        10, ['int', 'float']),
+                                                   skip = optionGet('SkipMaxTimeImmobility',
+                                                                    12, 'int'),
+                                                   smooth = optionGet('SmoothMaxTimeImmobility',
+                                                                      2, 'int'))
+            return self.drawPeriods(immobility)
         elif parameter == "mobility":
             immobility = cm.getMaxTimeOfImmobility(forGraph = True, time = self.maxTime / 60000,
                                                    startTime = self.minTime / 60000,
@@ -126,7 +127,7 @@ class Graphs(Canvas):
                 t1 = times[0]
                 mobility.append((t0, t1))
                 t0 = times[1]
-            self.drawPeriods(mobility)
+            return self.drawPeriods(mobility)
         elif parameter == "thigmotaxis":
             percentSize = optionGet("ThigmotaxisPercentSize", 20, ["int", "float"])
             start = cm.findStart(self.minTime / 60000)
@@ -156,7 +157,7 @@ class Graphs(Canvas):
                     break
             if outside:
                 periods.append((t0, self.maxTime))
-            self.drawPeriods(periods)
+            return self.drawPeriods(periods)
         elif parameter == "shocks":
             shocks = []
             prev = 0
@@ -214,8 +215,8 @@ class Graphs(Canvas):
                         start = wrong
                     prev = wrong
                 wrongs.append((start, prev))
-                self.drawPeriods([(cm.data[wrong[0] - 1][1], cm.data[wrong[1] - 1][1]) for\
-                                  wrong in wrongs])
+                bps = [(cm.data[wrong[0] - 1][1], cm.data[wrong[1] - 1][1]) for wrong in wrongs]
+                return self.drawPeriods(bps)
         elif parameter == "strategies":
             rows = optionGet('rowsStrategies', 25, 'int')
             minSpeed = optionGet('minSpeedStrategies', 10, ['int', 'float'])
@@ -232,10 +233,18 @@ class Graphs(Canvas):
                       "reaction_counterclockwise": "red",
                       "reaction_clockwise": "goldenrod1",
                       "center": "wheat4"}
-            for strategy, periods in strategies.items():
-                self.drawPeriods(periods, color = colors[strategy], width = 240)
-            self.lower("parameter")
-
+            if purpose == "graph":
+                for strategy, periods in strategies.items():
+                    self.drawPeriods(periods, color = colors[strategy], width = 240)
+                self.lower("parameter")
+            else:
+                for strategy, periods in strategies.items():
+                    if strategy == "immobile":
+                        continue
+                    self.drawPeriods(periods, color = colors[strategy].replace("_", "").rstrip("14"),
+                                     width = 240, toReturn = False)
+                return self.returnPeriods()
+                
 
     def drawPeriods(self, periods, color = "red", width = 3):
         "draws selected parameter on top of the graph" 
@@ -296,8 +305,8 @@ class SvgGraph():
         self.width = width
         self.drawnParameter = None    
         self.parent = parent
+        self.periodText = ""
         self.__class__.__bases__ = (self.__class__.__bases__[1], self.__class__.__bases__[0])        
-
 
     def __del__(self):
         self.__class__.__bases__ = (self.__class__.__bases__[1], self.__class__.__bases__[0])
@@ -312,11 +321,13 @@ class SvgGraph():
         return self.points, self.maxY, self.furtherText
 
 
-    def drawPeriods(self, periods, color = "red", width = 3):
+    def drawPeriods(self, periods, color = "red", width = 8, toReturn = True):
         "draws selected parameter on top of the graph" 
         if not periods:
-            return
+            return ""
         timeSpread = (self.maxTime - self.minTime)
+        text = ""
+        line = '<line x1="{0}" y1="{1}" x2="{2}" y2="{1}" stroke="{3}" stroke-width="{4}"/>\n'
         for period in periods:
             if period[0] > self.minTime and period[1] < self.maxTime:
                 begin = period[0]
@@ -329,11 +340,17 @@ class SvgGraph():
                 end = self.maxTime
             else:
                 continue
-            self.create_line(((begin - self.minTime) * self.width / timeSpread,
-                              0.03 * self.height,
-                              (end - self.minTime) * self.width / timeSpread,
-                              0.03 * self.height),
-                             fill = color, width = width, tags = "parameter")
+            text += line.format((begin - self.minTime) * self.width / timeSpread,
+                                (width/480) * self.height,
+                                (end - self.minTime) * self.width / timeSpread,
+                                color, width/2)
+        self.periodText += text
+        if toReturn:
+            return self.periodText
+
+
+    def returnPeriods(self):
+        return self.periodText        
 
 
     def drawTimes(self, times):
@@ -345,7 +362,7 @@ class SvgGraph():
         for time in times:
             if self.minTime < time < self.maxTime:
                 x = (time - self.minTime) * self.width / timeSpread
-                text += '<line x1="{0}" y1="0" x2="{0}" y2="5" stroke="red"/>'.format(x)
+                text += '<line x1="{0}" y1="0" x2="{0}" y2="5" stroke="red"/>\n'.format(x)
         return text
 
 
@@ -421,14 +438,24 @@ class SpeedGraph(Graphs, SvgGraph):
         self.drawGraph(maxY = self.maxY, valueList = self.points)
 
 
+    def addYticks(self):
+        at = []
+        labels = []
+        for i in range((self.maxY // 20) + 1):
+            at.append(i*20 / self.maxY)
+            labels.append(str(i*20))
+        return at, labels
+
+
+    def getYlabel(self):
+        return "Speed [m/s]"
+
 
 class DistanceFromCenterGraph(Graphs, SvgGraph):
     "graph depicting distance from center of arena during the session"
-    def __init__(self, parent, cm = None, purpose = "graph"):
-        if purpose == "graph":
-            Graphs.__init__(self, parent)
-        else:
-            SvgGraph.__init__(self, parent, cm)
+    def __init__(self, parent, cm = None, purpose = "graph", width = 600):
+        self.primaryParent = Graphs if purpose == "graph" else SvgGraph
+        self.primaryParent.__init__(self, parent, cm = cm, width = width)
 
 
     def writeFurtherText(self):
@@ -445,6 +472,7 @@ class DistanceFromCenterGraph(Graphs, SvgGraph):
         start = cm.findStart(self.minTime / 60000)
 
         self.radius = cm.radius
+        self.resolution = cm.trackerResolution
         Cx, Cy = cm.centerX, cm.centerY
 
         if m.mode == "RA":
@@ -473,16 +501,28 @@ class DistanceFromCenterGraph(Graphs, SvgGraph):
         self.create_line((0, 10, self.width, 10), fill = "grey")
 
         self.drawGraph(maxY = self.maxY, valueList = self.points)
-      
+
+
+    def addYticks(self):
+        at = []
+        labels = []
+        maxYcm = self.maxY / self.resolution
+        for i in range((int(maxYcm) // 20) + 1):
+            at.append(i*20 / maxYcm)
+            labels.append(str(i*20))
+        return at, labels
+
+
+    def getYlabel(self):
+        return "Distance [cm]"
+    
 
 
 class DistanceFromPlatformGraph(Graphs, SvgGraph):
     "graph depicting distance from platform during the MWM session"
-    def __init__(self, parent, cm = None, purpose = "graph"):
-        if purpose == "graph":
-            Graphs.__init__(self, parent)
-        else:
-            SvgGraph.__init__(self, parent, cm)
+    def __init__(self, parent, cm = None, purpose = "graph", width = 600):
+        self.primaryParent = Graphs if purpose == "graph" else SvgGraph
+        self.primaryParent.__init__(self, parent, cm = cm, width = width)
 
 
     def writeFurtherText(self):
@@ -520,12 +560,13 @@ class DistanceFromPlatformGraph(Graphs, SvgGraph):
 
         self.drawGraph(maxY = self.maxY, valueList = self.points)
 
-
+    
 
 class DistanceFromRobotGraph(DistanceFromPlatformGraph):
     "graph depicting distance from the robot during the RA session"
-    def __init__(self, parent, cm = None, purpose = "graph"):
-        super().__init__(parent = parent, cm = cm, purpose = purpose)       
+    def __init__(self, parent, cm = None, purpose = "graph", width = 600):
+        self.primaryParent = Graphs if purpose == "graph" else SvgGraph
+        self.primaryParent.__init__(self, parent, cm = cm, width = width)      
 
         
     def compute(self, cm, smooth = 10):
@@ -537,18 +578,17 @@ class DistanceFromRobotGraph(DistanceFromPlatformGraph):
                        for line in cm.data[start:] if line[1] <= self.maxTime]
 
         self.maxY = cm.radius * 2
-        
+    
 
 
 class AngleGraph(Graphs, SvgGraph):
     "graph depicting angle relative to the center of shock zone during the session"
-    def __init__(self, parent, cm = None, purpose = "graph"):
-        if purpose == "graph":
-            Graphs.__init__(self, parent)
-        else:
-            SvgGraph.__init__(self, parent, cm)
-            self.maxTime = eval(self.parent.timeFrame.timeVar.get()) * 60000
-            self.minTime = eval(self.parent.timeFrame.startTimeVar.get()) * 60000
+    def __init__(self, parent, cm = None, purpose = "graph", width = 600):
+        self.primaryParent = Graphs if purpose == "graph" else SvgGraph
+        self.primaryParent.__init__(self, parent, cm = cm, width = width)
+        
+        self.maxTime = eval(self.parent.timeFrame.timeVar.get()) * 60000
+        self.minTime = eval(self.parent.timeFrame.startTimeVar.get()) * 60000
             
 
     def compute(self, cm):
@@ -625,7 +665,7 @@ class AngleGraph(Graphs, SvgGraph):
         self.compute(cm)
         wid = cm.width
 
-        size = (600, 120)
+        size = (self.width, self.height)
 
         maxX = len(self.angles) - self.crosses
         text = ""
@@ -668,3 +708,12 @@ class AngleGraph(Graphs, SvgGraph):
         text += '" style = "fill:none;stroke:black"/>\n'
         return text
 
+
+    def addYticks(self):
+        at = [0, 0.5, 1]
+        labels = ["0", "180", "360"]
+        return at, labels
+
+
+    def getYlabel(self):
+        return "Angle [deg]"

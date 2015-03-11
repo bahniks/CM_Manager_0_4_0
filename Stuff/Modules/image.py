@@ -18,6 +18,7 @@ along with Carousel Maze Manager.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from math import radians, cos, sin
+from tkinter import *
 
 
 import os
@@ -27,6 +28,7 @@ import webbrowser # for testing
 from optionget import optionGet
 from graphs import getGraphTypes, Graphs, SvgGraph, SpeedGraph, DistanceFromCenterGraph
 from graphs import AngleGraph, DistanceFromPlatformGraph, DistanceFromRobotGraph
+from window import placeWindow
 import mode as m
 
 
@@ -49,24 +51,58 @@ def svgSave(cm, filename, what, root):
     file = os.path.splitext(os.path.basename(filename))[0] + "_" + what.replace(" ", "_") + ".svg"
     svg.save(os.path.join(directory, file))
     webbrowser.open_new(os.path.join(directory, file)) # for testing
+
         
 
+class ImagesOptions(Toplevel):
+    def __init__(self, root):
+        super().__init__(root)
+        self.root = root
+        #placeWindow(self, 598, 208)
+        self.title = "Images options"
+        self.grab_set()
+        self.focus_set()     
+        self.resizable(False, False)
+
+        self.scale = optionGet("LastImageScale", 1, ["int", "float"])
+        self.main = optionGet("LastImageScale", "default", "str")
+        self.xgap = optionGet("LastImageScale", 10, ["int", "float"])
+        self.ygap = optionGet("LastImageScale", 10, ["int", "float"])
+        self.xlab = optionGet("LastImageScale", "Time", "str")
+        self.ylab = optionGet("LastImageScale", "default", "str")
+        self.xticks = optionGet("LastImageScale", True, "bool")
+        self.yticks = optionGet("LastImageScale", True, "bool")
+
+        self.okBut = ttk.Button(self, text = "Ok", command = self.okFun)
+        self.okBut.grid(column = 1, row = 1, padx = 3, pady = 4)
+        self.cancelBut = ttk.Button(self, text = "Cancel", command = self.cancelFun)    
+        self.cancelBut.grid(column = 2, row = 1, padx = 3, pady = 4)
+
+
+    def okFun(self):
+        self.destroy()
+
+
+    def cancelFun(self):
+        self.destroy()
+
+        
 
 class SVG():
     "represents .svg file - text of the file is stored in self.content"
     def __init__(self, cm, components, root):
         self.start = int(root.timeFrame.startTimeVar.get())
         self.end = int(root.timeFrame.timeVar.get())
-        self.parameter = "shocks" # for testing
+        self.parameter = root.graphParameter.get()
 
         self.cm = cm
         self.components = components
-        self.scale = 1
-        self.main = "Main"
+        self.scale = 1.5
+        self.main = "default"
         self.xgap = 10
         self.ygap = 10
-        self.xlab = "xlab"
-        self.ylab = "ylab"
+        self.xlab = "Time"
+        self.ylab = "default"
         self.xticks = True
         self.yticks = True
 
@@ -102,6 +138,7 @@ class SVG():
     def addComponents(self):
         if self.main:
             self.components.append("main")
+            self.main = self.cm.nameA
         if self.xgap and "room" in self.components and "arena" in self.components:
             self.components.append("xgap")
         if self.ygap and "graph" in self.components and "arena" in self.components:
@@ -120,16 +157,16 @@ class SVG():
         x = [0] * 6
         y = [0] * 7
         # sizes [(x.size, column, columnspan), (y.size, row)]
-        sizes = {"main": [(0, 0), (20, 1)],
+        sizes = {"main": [(0, 0), (25, 1)],
                  "arena": [(300, 3), (300, 2)],
                  "room": [(300, 5), (300, 2)],
                  "graph": [(600, 5, 3), (120, 4)],
                  "xgap": [(self.xgap, 4), (0, 0)],
                  "ygap": [(0, 0), (self.ygap, 3)],
                  "xticks": [(0, 0), (10, 5)],
-                 "yticks": [(10, 2), (0, 0)],
+                 "yticks": [(20, 2), (0, 0)],
                  "xlab": [(0, 0), (15, 6)],
-                 "ylab": [(15, 1), (0, 0)]
+                 "ylab": [(30, 1), (0, 0)]
                  }
         for component in self.components:
             xs, ys = sizes[component]
@@ -159,10 +196,10 @@ class SVG():
 
 
     def addMain(self):
-        x = (self.x[4] - self.x[3]) / 2
-        main = ('<text x="{0}" y="15" font-size="15" text-anchor="middle" '
+        x = (self.x[5] - self.x[2]) / 2
+        main = ('<text x="{0}" y="18" font-size="15" text-anchor="middle" '
                 'fill="black">{1}</text>'.format(x, self.main))
-        self.add(main, 3, 0)
+        self.add(main, 2, 0)
 
 
     def addArena(self):
@@ -248,11 +285,15 @@ class SVG():
 
 
     def addGraph(self):
-        size = (600 + self.xgap, 120)
-        graph = ('<rect style="stroke:black;fill:none" x="0" y="0" '
-                 'width="{0}" height="{1}" />\n'.format(size[0], size[1])) 
-
+        size = (self.x[5] - self.x[2], 120)
         yCoordinates, maxY, furtherText = self.graph.saveGraph(self.cm)
+        
+        graph = ""
+        graph += self.addParameter()
+        graph += ('<rect style="stroke:black;fill:none" x="0" y="0" '
+                  'width="{0}" height="{1}" />\n'.format(size[0], size[1]))
+        graph += furtherText
+
         points = []
         if yCoordinates:
             length = len(yCoordinates) - 1
@@ -265,15 +306,15 @@ class SVG():
                 graph += ",".join(map(str, pair)) + " "      
             graph += '" style = "fill:none;stroke:black"/>\n'
 
-        graph += self.addParameter()
-        graph += furtherText
-
         self.add(graph, 2, 3)
 
 
     def addParameter(self):
-        text = self.graph.drawParameter(self.cm, self.parameter, purpose = "svg")
-        return text
+        if not self.parameter:
+            return ""
+        else:
+            text = self.graph.drawParameter(self.cm, self.parameter, purpose = "svg")
+            return text
 
 
     def addXticks(self):
@@ -293,29 +334,40 @@ class SVG():
 
         text = ""
         for tick, label in zip(ticks, labels):
-            x = (tick - self.start)/time * (600 + self.xgap)
-            text += ('<text x="{0}" y="10" font-size="10" text-anchor="middle" '
+            x = (tick - self.start)/time * (self.x[5] - self.x[2])
+            text += ('<text x="{0}" y="10" font-size="12" text-anchor="middle" '
                      'fill="black">{1}</text>\n'.format(x, label))
-            text += '<line x1="{0}" y1="{1}" x2="{0}" y2="{2}" stroke="black"/>'.format(x, -2, -10)                            
+            text += '<line x1="{0}" y1="{1}" x2="{0}" y2="{2}" stroke="black"/>\n'.format(x, -4, -10)                            
 
         self.add(text, 2, 5)
         
 
     def addYticks(self):
-        pass
+        at, labels = self.graph.addYticks()
+        tick = '<line x1="{0}" y1="{1}" x2="{2}" y2="{1}" stroke="black"/>\n'
+        label = '<text x="{}" y="{}" font-size="12" text-anchor="end" fill="black">{}</text>\n'
+        xdif = self.x[2] - self.x[1]
+        ydif = self.y[3] - self.y[4]
+        yticks = ""
+        for y, lab in zip(at, labels):
+            yticks += tick.format(xdif, y*ydif - ydif, xdif - 6)
+            yticks += label.format(xdif - 10, y*ydif - ydif + 4, lab)
+        self.add(yticks, 1, 3)
 
 
     def addXlab(self):
-        x = (self.x[4] - self.x[3]) / 2
+        x = (self.x[5] - self.x[2]) / 2
         xlab = ('<text x="{0}" y="15" font-size="15" text-anchor="middle" '
                 'fill="black">{1}</text>'.format(x, self.xlab))
-        self.add(xlab, 3, 6)
+        self.add(xlab, 2, 6)
 
 
     def addYlab(self):
+        if self.ylab == "default":
+            self.ylab = self.graph.getYlabel()
         y = (self.y[4] - self.y[3]) / 2 
         ylab = ('<text x="0" y="{0}" font-size="15" text-anchor="middle" fill="black" '
-                'transform="translate({1},{0}) rotate(270)">{2}</text>'.format(y, -y+10, self.ylab))
+                'transform="translate({1},{0}) rotate(270)">{2}</text>'.format(y, -y+15, self.ylab))
         self.add(ylab, 0, 3)
     
 
@@ -329,19 +381,8 @@ class SVG():
 
 
 
-
 def main():
-    from cm import CM
-    import os
-    import os.path
-    svg = SVG(300, 300)
-    cm = CM(os.path.join(os.getcwd(), "TestingFiles", "09aNO465_Arena.dat"))
-    svg.drawAAPA(cm, "room", boundary = True, sector = True, shocks = True)
-    output = os.path.join(os.getcwd(), "TestingFiles", "test.svg") 
-    svg.save(output)
-    os.startfile(output)
-
-
+    pass
 
 
 if __name__ == "__main__": main()

@@ -30,7 +30,7 @@ import os.path
 from showtracks import ShowTracks
 from filestorage import FileStorageFrame
 from commonframes import TimeFrame, returnName
-from image import svgSave
+from image import svgSave, ImagesOptions
 from processor import ProgressWindow
 from optionget import optionGet
 from graphs import getGraphTypes, Graphs, SvgGraph, SpeedGraph, DistanceFromCenterGraph
@@ -125,6 +125,8 @@ class Explorer(ttk.Frame):
                                   state = "disabled")
         self.saveBut = ttk.Button(self.saveImagesLF, text = "Save", command = self.saveImages,
                                   state = "disabled")
+        self.optionBut = ttk.Button(self.saveImagesLF, text = "Options",
+                                    command = self.imagesOptions)
 
         # checkbuttons
         self.removeReflections = ttk.Checkbutton(self.optionsLF, text = "Remove reflections",
@@ -226,7 +228,8 @@ class Explorer(ttk.Frame):
         self.playBut.grid(column = 0, row = 0, sticky = (N, S), padx = 2, pady = 2)
         self.pauseBut.grid(column = 1, row = 0, sticky = (N, S), padx = 2, pady = 2)
         self.stopBut.grid(column = 2, row = 0, sticky = (N, S), padx = 2, pady = 2)
-        self.saveBut.grid(column = 1, row = 2, sticky = E)
+        self.saveBut.grid(column = 2, row = 2, sticky = E)
+        self.optionBut.grid(column = 0, row = 2, sticky = W, columnspan = 2)
 
         self.removeReflections.grid(column = 1, row = 0, padx = 3, pady = 2, sticky = (N, W))
         self.showTail.grid(column = 1, row = 2, padx = 3, pady = 2, sticky = (N, W))
@@ -259,8 +262,8 @@ class Explorer(ttk.Frame):
         self.timeSc.grid(column = 0, row = 2, columnspan = 7, sticky = (E, W), pady = 4, padx = 2)
         self.speedSc.grid(column = 0, row = 0, sticky = (N, S, E, W), pady = 3)
 
-        self.saveWhatCombo.grid(column = 1, row = 0)
-        self.saveWhichFilesCombo.grid(column = 1, row = 1)
+        self.saveWhatCombo.grid(column = 1, row = 0, columnspan = 2)
+        self.saveWhichFilesCombo.grid(column = 1, row = 1, columnspan = 2)
 
         # statusBar binding
         self.statusBar.bind("<Double-1>", self._statusBarDoubleclick)
@@ -289,6 +292,10 @@ class Explorer(ttk.Frame):
             child.bind("<c>", lambda e: self.pauseBut.invoke())
             child.bind("<v>", lambda e: self.stopBut.invoke())            
         
+
+    def imagesOptions(self):
+        ImagesOptions(self)
+
 
     def saveImages(self):
         "saves images for selected files"
@@ -781,8 +788,8 @@ class Explorer(ttk.Frame):
                                        fill = "black", width = 2)
                 
             if self.showShocksVar.get():
-                indices = slice(2,4) if m.mode == "CA" else slice(7,9)
-                fun = self.roomCanv.create_oval if m.mode == "CA" else self.arenaCanv.create_oval
+                indices = slice(2,4) if m.mode == "CM" else slice(7,9)
+                fun = self.roomCanv.create_oval if m.mode == "CM" else self.arenaCanv.create_oval
                 
                 shocks = [line[indices] for count, line in enumerate(self.cm.data) if
                           self.minTime <= line[1] <= self.maxTime and line[6] > 0 and
@@ -892,7 +899,7 @@ class Explorer(ttk.Frame):
         drawnParameter = self.graph.drawnParameter
         self.graph = eval(self.graphTypeVar.get())
         self.graph.drawnParameter = drawnParameter
-        self.graph.grid(column = 0, row = 4, columnspan = 7, padx = 2, pady = 5, sticky = (E, W))
+        self.graph.grid(column = 0, row = 4, columnspan = 7, padx = 2, pady = 5)
         self.graph.bind("<Button-1>", self.graphClick)
         self.graph.bind("<Button-3>", self.graphPopUp)
         if self.initialized:
