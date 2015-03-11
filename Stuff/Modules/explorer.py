@@ -82,6 +82,7 @@ class Explorer(ttk.Frame):
         self.saveWhatVar.set("all")
         self.saveWhichFilesVar.set("current")
         self.selectedParameter.set("")
+        self.graphParameter.set("nothing")
         
         
         # frames
@@ -939,8 +940,9 @@ class Explorer(ttk.Frame):
                                      self.cm, self.graphParameter.get()))
         
         menu.add_separator()
-        menu.add_command(label = "Don't show anything",
-                         command = lambda: self.graph.drawParameter(self.cm, None))
+        menu.add_radiobutton(label = "Don't show anything",
+                             variable = self.graphParameter, value = "nothing",
+                             command = lambda: self.graph.drawParameter(self.cm, ""))
         menu.post(event.x_root, event.y_root)        
 
 

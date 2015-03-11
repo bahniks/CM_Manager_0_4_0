@@ -37,11 +37,20 @@ def optionGet(option, default, valueType, general = False):
             if optString in line:
                 result = line[len(optString):].strip(" \t\n")
                 if type(valueType) == list:
-                    for typ in valueType:
+                    if ["float", "int"] == sorted(valueType):                       
                         try:
-                            return eval("%s(%s)" % (typ, result))
+                            if "." in str(result):
+                                return float(result)
+                            else:
+                                return int(result)
                         except Exception:
                             pass
+                    else:            
+                        for typ in valueType:
+                            try:
+                                return eval("%s(%s)" % (typ, result))
+                            except Exception:
+                                pass
                 else:
                     try:
                         return eval("%s(%s)" % (valueType, result))

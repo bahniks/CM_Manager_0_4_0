@@ -26,6 +26,7 @@ import webbrowser # for testing
 
 
 from optionget import optionGet
+from optionwrite import optionWrite
 from graphs import getGraphTypes, Graphs, SvgGraph, SpeedGraph, DistanceFromCenterGraph
 from graphs import AngleGraph, DistanceFromPlatformGraph, DistanceFromRobotGraph
 from window import placeWindow
@@ -58,29 +59,77 @@ class ImagesOptions(Toplevel):
     def __init__(self, root):
         super().__init__(root)
         self.root = root
-        #placeWindow(self, 598, 208)
-        self.title = "Images options"
+        placeWindow(self, 598, 208)
+        self.title("Images options")
         self.grab_set()
         self.focus_set()     
         self.resizable(False, False)
 
-        self.scale = optionGet("LastImageScale", 1, ["int", "float"])
-        self.main = optionGet("LastImageScale", "default", "str")
-        self.xgap = optionGet("LastImageScale", 10, ["int", "float"])
-        self.ygap = optionGet("LastImageScale", 10, ["int", "float"])
-        self.xlab = optionGet("LastImageScale", "Time", "str")
-        self.ylab = optionGet("LastImageScale", "default", "str")
-        self.xticks = optionGet("LastImageScale", True, "bool")
-        self.yticks = optionGet("LastImageScale", True, "bool")
+        self.oFrame = ttk.Frame(self)
+        self.oFrame.grid(column = 0, columnspan = 3, row = 0)
 
+        options = (("Scale", ("LastImageScale", 1, ["int", "float"])),
+                   ("Main title ('default' for filename)", ("LastImageMain", "default", "str")),
+                   ("Horizontal gap", ("LastImageXgap", 10, ["int", "float"])),
+                   ("Vertical gap", ("LastImageYgap", 10, ["int", "float"])),
+                   ("x-axis title", ("LastImageXlab", "Time", "str")),
+                   ("y-axis title (smart 'default')", ("LastImageYlab", "default", "str")),
+                   ("x-axis ticks", ("LastImageXticks", True, "bool")),
+                   ("y-axis ticks", ("LastImageYticks", True, "bool")))
+        self.options = options
+
+        self.opts = []
+        entryWidth = 10
+
+        for row, option in enumerate(options):
+            self.opts.append({})
+            var = BooleanVar if option[1][2] == 'bool' else StringVar
+            self.opts[row]["variable"] = var()
+            current = optionGet(*option[1])
+            if type(current) == str:
+                current = "'" + current + "'"
+            self.opts[row]["variable"].set(current)
+            self.opts[row]["label"] = ttk.Label(self.oFrame, text = option[0])
+            self.opts[row]["label"].grid(column = 0, row = row, pady = 2, sticky = E)
+            if option[1][2] == 'bool':
+                self.opts[row]["input"] = ttk.Checkbutton(self.oFrame, onvalue = True,
+                                                          offvalue = False,
+                                                          variable = self.opts[row]["variable"])
+            else:
+                self.opts[row]["input"] = ttk.Entry(self.oFrame, width = entryWidth,
+                                                    justify = 'right',
+                                                    textvariable = self.opts[row]["variable"])
+            self.opts[row]["input"].grid(column = 1, row = row, padx = 2, pady = 2)
+            
         self.okBut = ttk.Button(self, text = "Ok", command = self.okFun)
-        self.okBut.grid(column = 1, row = 1, padx = 3, pady = 4)
+        self.okBut.grid(column = 2, row = 1, padx = 3, pady = 4)
         self.cancelBut = ttk.Button(self, text = "Cancel", command = self.cancelFun)    
-        self.cancelBut.grid(column = 2, row = 1, padx = 3, pady = 4)
+        self.cancelBut.grid(column = 1, row = 1, padx = 3, pady = 4)
+        self.resetBut = ttk.Button(self, text = "Reset", command = self.resetFun)
+        self.resetBut.grid(column = 0, row = 1, padx = 3, pady = 4)
 
 
     def okFun(self):
+        for row, option in enumerate(self.options):
+            value = str(self.opts[row]["variable"].get())
+            if option[1][2] == "bool":
+                value = bool(eval(value))
+            elif option[1][2] != "str":
+                value = eval(value)
+            else:
+                value.replace('"', "'")
+                if not value.endswith("'"):
+                    value += "'"
+                if not value.startswith("'"):
+                    value = "'" + value
+            optionWrite(option[1][0], value)
         self.destroy()
+
+
+    def resetFun(self):
+        for count, option in enumerate(self.options):
+            optionWrite(option[1][0], option[1][1])
+            self.opts[count]["variable"].set(option[1][1])
 
 
     def cancelFun(self):
@@ -94,17 +143,19 @@ class SVG():
         self.start = int(root.timeFrame.startTimeVar.get())
         self.end = int(root.timeFrame.timeVar.get())
         self.parameter = root.graphParameter.get()
+        if self.parameter == "nothing":
+            self.parameter = ""
 
         self.cm = cm
         self.components = components
-        self.scale = 1.5
-        self.main = "default"
-        self.xgap = 10
-        self.ygap = 10
-        self.xlab = "Time"
-        self.ylab = "default"
-        self.xticks = True
-        self.yticks = True
+        self.scale = optionGet("LastImageScale", 1, ["int", "float"])
+        self.main = optionGet("LastImageMain", "default", "str")
+        self.xgap = optionGet("LastImageXgap", 10, ["int", "float"])
+        self.ygap = optionGet("LastImageYgap", 10, ["int", "float"])
+        self.xlab = optionGet("LastImageXlab", "Time", "str")
+        self.ylab = optionGet("LastImageYlab", "default", "str")
+        self.xticks = optionGet("LastImageXticks", True, "bool")
+        self.yticks = optionGet("LastImageYticks", True, "bool")
 
         self.addComponents()
         self.computeSize()
@@ -138,7 +189,8 @@ class SVG():
     def addComponents(self):
         if self.main:
             self.components.append("main")
-            self.main = self.cm.nameA
+            if self.main == "default":
+                self.main = os.path.basename(self.cm.nameA)
         if self.xgap and "room" in self.components and "arena" in self.components:
             self.components.append("xgap")
         if self.ygap and "graph" in self.components and "arena" in self.components:
