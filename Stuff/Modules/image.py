@@ -117,11 +117,14 @@ class ImagesOptions(Toplevel):
             elif option[1][2] != "str":
                 value = eval(value)
             else:
-                value.replace('"', "'")
-                if not value.endswith("'"):
-                    value += "'"
-                if not value.startswith("'"):
-                    value = "'" + value
+                if not value:
+                    value = ""
+                else:
+                    value.replace('"', "'")
+                    if not value.endswith("'"):
+                        value += "'"
+                    if not value.startswith("'"):
+                        value = "'" + value
             optionWrite(option[1][0], value)
         self.destroy()
 
@@ -199,9 +202,9 @@ class SVG():
             self.components.append("xticks")
         if self.yticks and "graph" in self.components:
             self.components.append("yticks")
-        if self.xlab and "graph" in self.components:
+        if self.xlab.strip() and "graph" in self.components:
             self.components.append("xlab")
-        if self.ylab and "graph" in self.components:
+        if self.ylab.strip() and "graph" in self.components:
             self.components.append("ylab")
 
 

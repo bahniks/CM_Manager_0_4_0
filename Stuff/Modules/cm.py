@@ -1045,11 +1045,9 @@ class CM:
         x0, y0 = self.data[i0][self.indices]
         x1, y1 = self.data[i1][self.indices]
         t0, t1 = self.data[i0][1], self.data[i1][1]
-        try:
-            speed = (sqrt(((x1 - x0)**2 + (y1 - y0)**2)) / self.trackerResolution) / ((t1 - t0) / 1000)
-        except Exception:
-            print(self.data[i0])
-            print(self.data[i1])
+
+        speed = (sqrt(((x1 - x0)**2 + (y1 - y0)**2)) / self.trackerResolution) / ((t1 - t0) / 1000)
+
         if speed > minSpeed:
             border = self.radius * (1 - (percentSize / 100))
             cx, cy = self.centerX, self.centerY
