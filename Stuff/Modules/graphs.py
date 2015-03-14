@@ -241,7 +241,7 @@ class Graphs(Canvas):
                 for strategy, periods in strategies.items():
                     if strategy == "immobile":
                         continue
-                    self.drawPeriods(periods, color = colors[strategy].replace("_", "").rstrip("14"),
+                    self.drawPeriods(periods, color = colors[strategy].replace(" ", "").rstrip("14"),
                                      width = 240, toReturn = False)
                 return self.returnPeriods()
                 
