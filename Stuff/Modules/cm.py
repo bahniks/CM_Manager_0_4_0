@@ -128,6 +128,12 @@ class CM:
                     if strg[i] == "(":
                         pos = i
                 self.arenaDiameter = eval(strg[pos+1])
+            elif "FeederParameters" in line and "//" not in line:
+                strg = line.split()
+                for i in range(len(strg)):
+                    if strg[i] == "(":
+                        pos = i
+                self.entranceLatency = eval(strg[pos+1])
             elif "END_HEADER" in line:
                 break
             

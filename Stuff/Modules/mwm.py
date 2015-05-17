@@ -46,6 +46,8 @@ class MWM(SF, CM):
         if not self.data:
             raise Exception("Failure in data initialization.")
 
+        print(self.getT1Stay())
+
 
     def _addReinforcedSector(self, string, position):
         self.platformX = eval(string[position+1])   
@@ -54,9 +56,36 @@ class MWM(SF, CM):
 
 
 
+    def getT1(self, time = 1, startTime = 0, lastTime = "fromParameter"):
+        """computes time to get to the platform and stay there (in seconds),
+        argument 'time' is time of the session
+        argument 'lastTime' decides whether the last time point is obtained from 'time' parameter
+            or data
+        """
+        start = self.findStart(startTime)
+        time *= 60000 # conversion from minutes to miliseconds
+        startTime *= 60000
+        T1 = 0
+        for content in self.data[start:]:
+            if content[5] < 2:
+                continue
+            elif content[5] in [2, 3]:
+                T1 = content[1] - startTime
+                break
+            
+        if T1 == 0 or T1 > time - startTime:
+            if lastTime == "fromData": # not used - may be added as an option in the future
+                T1 = min(time, self.data[-1][1]) - startTime
+            elif lastTime == "fromParameter":
+                T1 = time - startTime
+                
+        T1 = T1 / 1000 # conversion from miliseconds to seconds
+        return format(T1, "0.1f")
+
+
 
     def getT1Pass(self, time = 1, startTime = 0, lastTime = "fromParameter"):
-        """computes time to first shock (in seconds),
+        """computes time to first pass through the platform (in seconds),
         argument 'time' is time of the session
         argument 'lastTime' decides whether the last time point is obtained from 'time' parameter
             or data
@@ -70,6 +99,47 @@ class MWM(SF, CM):
             elif content[5] > 0 and content[5] != 5:
                 T1 = content[1] - startTime
                 break
+            
+        if T1 == 0 or T1 > time - startTime:
+            if lastTime == "fromData": # not used - may be added as an option in the future
+                T1 = min(time, self.data[-1][1]) - startTime
+            elif lastTime == "fromParameter":
+                T1 = time - startTime
+                
+        T1 = T1 / 1000 # conversion from miliseconds to seconds
+        return format(T1, "0.1f")
+
+
+    def getT1Stay(self, time = 1, startTime = 0, platformAdjustment = 2, lastTime = "fromParameter"):
+        """computes time to first stay in the vicinity of the platform (in seconds),
+        argument 'time' is time of the session
+        argument 'lastTime' decides whether the last time point is obtained from 'time' parameter
+            or data
+        """
+        time = time * 60000 # conversion from minutes to miliseconds
+        start = self.findStart(startTime)
+        T1 = 0
+        x, y = self.platformX, self.platformY
+        passTime = None
+        for content in self.data[start:]:
+            if content[5] == 0:
+                if passTime:
+                    distanceToTarget = sqrt((content[2] - x)**2 + (content[3] - y)**2)
+                    if distanceToTarget < self.platformRadius * platformAdjustment:
+                        if content[1] - passTime >= self.entranceLatency:               
+                            T1 = content[1] - startTime                
+                            break
+                    else:
+                        passTime = None
+            elif content[5] in [2, 3]:
+                T1 = content[1] - startTime
+                break
+            elif content[5] == 1:
+                if not passTime:
+                    passTime = content[1]
+                elif content[1] - passTime >= self.entranceLatency:               
+                    T1 = content[1] - startTime                
+                    break
             
         if T1 == 0 or T1 > time - startTime:
             if lastTime == "fromData": # not used - may be added as an option in the future

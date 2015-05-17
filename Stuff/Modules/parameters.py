@@ -181,7 +181,11 @@ class ParametersMWM(OrderedDict):
                      "Computed from every [in rows]"),
             "minDifference": (Opt('MinDiffParAvgDistance', 0, ['int', 'float']),
                               "Minimal distance counted [in pixels]")
-            })  
+            })
+        self["Time to first stay"] = Par("getT1Stay", "experimental", {
+            "platformAdjustment": (Opt('platformAdjustmentT1Stay', 2, ['int', 'float']),
+                                   "Platform adjustment")
+            })
         self["Average distance from chosen"] = Par("getAvgDistanceChosen", "advanced", {
             "angle": (Opt('angleParAvgDistanceCustom', 180, ['int', 'float', 'list']),
                       "Angle of chosen location relative to the target [in degrees]"),
