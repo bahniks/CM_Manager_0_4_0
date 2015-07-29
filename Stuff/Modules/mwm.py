@@ -46,8 +46,6 @@ class MWM(SF, CM):
         if not self.data:
             raise Exception("Failure in data initialization.")
 
-        print(self.getT1Stay())
-
 
     def _addReinforcedSector(self, string, position):
         self.platformX = eval(string[position+1])   
