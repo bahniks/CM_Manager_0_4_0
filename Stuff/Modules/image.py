@@ -51,7 +51,7 @@ def svgSave(cm, filename, what, root):
     svg = SVG(cm, components, root)
     file = os.path.splitext(os.path.basename(filename))[0] + "_" + what.replace(" ", "_") + ".svg"
     svg.save(os.path.join(directory, file))
-    webbrowser.open_new(os.path.join(directory, file)) # for testing
+    #webbrowser.open_new(os.path.join(directory, file)) # for testing
 
         
 
