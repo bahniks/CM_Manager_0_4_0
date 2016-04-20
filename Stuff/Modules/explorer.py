@@ -43,7 +43,7 @@ class Explorer(ttk.Frame):
     "represents ''Explore' page in the main window notebook"
     def __init__(self, root):
         super().__init__(root)
-        
+
         self["padding"] = (10, 10, 12, 12)
 
         self.animate = "stop"
