@@ -345,7 +345,7 @@ class ShowFiles(Toplevel):
 
     def findPairsFun(self):
         "calls method of FileStorage finding pairs of data files"
-        self.config(cursor = "wait")
+        self.config(cursor = m.wait)
         self.update()
         self.fileStorage.findPairs(self.fileStorage.wrongfiles)
         self.refresh()
@@ -585,7 +585,7 @@ class FileStorageFrame(ttk.Frame):
     
     def addFilesFun(self):
         "asks uset to select files and adds them to filestorage (via addFiles)"
-        self.root.root.config(cursor = "wait")
+        self.root.root.config(cursor = m.wait)
         self.root.root.update()
         self.addFiles(self.getFiles())
         self.root.root.config(cursor = "")
@@ -595,7 +595,7 @@ class FileStorageFrame(ttk.Frame):
     def addDirectoryFun(self):
         """asks user to select directory and adds files from the directory to the list of files
         for processing"""
-        self.root.root.config(cursor = "wait")
+        self.root.root.config(cursor = m.wait)
         self.root.root.update()
         self.addFiles(self.getDirectory())
         self.root.root.config(cursor = "")
@@ -605,7 +605,7 @@ class FileStorageFrame(ttk.Frame):
     def loadFromLogFun(self):
         """asks user to select file with a log, loads files from the log and adds them to
         fileStorage"""
-        self.root.root.config(cursor = "wait")
+        self.root.root.config(cursor = m.wait)
         self.root.root.update()
         
         filename = str(askopenfilename(initialdir = optionGet("LogDirectory",

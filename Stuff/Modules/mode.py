@@ -17,8 +17,9 @@ You should have received a copy of the GNU General Public License
 along with Carousel Maze Manager.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from collections import namedtuple, OrderedDict
+import platform
 
+from collections import namedtuple, OrderedDict
 
 from cm import CM
 from mwm import MWM
@@ -35,6 +36,8 @@ fs = {}
 slaves = {}
 name = ""
 parameters = None
+wait = "wait" if platform.system() == "Windows" else "spinning"
+
 
 
 Task = namedtuple("Task", ["constructor", "files", "parameters"])
